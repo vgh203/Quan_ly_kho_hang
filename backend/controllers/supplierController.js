@@ -25,7 +25,7 @@ const serializeSupplier = (s) => {
 
 // 1. Get all active suppliers with search and pagination
 exports.getAllSuppliers = async (req, res) => {
-  const { search, limit, offset } = req.query;
+  const { search, limit, offset, product_ids } = req.query;
 
   const limitVal = limit ? parseInt(limit) : 200;
   const offsetVal = offset ? parseInt(offset) : 0;
@@ -39,6 +39,15 @@ exports.getAllSuppliers = async (req, res) => {
         { contact_person: { contains: search, mode: 'insensitive' } },
         { address: { contains: search, mode: 'insensitive' } }
       ];
+    }
+
+    if (product_ids) {
+      const ids = product_ids.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+      if (ids.length > 0) {
+        where.product_prices = {
+          some: { product_id: { in: ids } }
+        };
+      }
     }
 
     const suppliers = await prisma.supplier.findMany({

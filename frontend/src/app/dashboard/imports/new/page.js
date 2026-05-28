@@ -55,6 +55,7 @@ function ProductSearch({ onSelect, supplierId }) {
           value={query}
           onChange={(e) => search(e.target.value)}
           onFocus={() => { if (results.length === 0) search(''); else setOpen(true); }}
+          onBlur={() => setTimeout(() => setOpen(false), 200)}
         />
       </div>
       {open && results.length > 0 && (
@@ -83,6 +84,70 @@ function ProductSearch({ onSelect, supplierId }) {
   );
 }
 
+// ─── Supplier Search Dropdown ─────────────────────────────────
+function SupplierSearch({ onSelect, productIds, initialSupplierName }) {
+  const [query, setQuery] = useState(initialSupplierName || '');
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialSupplierName) setQuery(initialSupplierName);
+  }, [initialSupplierName]);
+
+  const search = async (q) => {
+    setQuery(q);
+    setLoading(true);
+    try {
+      const pIds = productIds.join(',');
+      const res = await api.get(`/suppliers?search=${encodeURIComponent(q)}&limit=100${pIds ? `&product_ids=${pIds}` : ''}`);
+      const data = res.data;
+      const list = Array.isArray(data) ? data : (data.data || []);
+      setResults(list);
+      setOpen(true);
+    } catch (_) {}
+    setLoading(false);
+  };
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+        <input
+          className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium"
+          placeholder="Tìm hoặc nhập tên nhà cung cấp..."
+          value={query}
+          onChange={(e) => search(e.target.value)}
+          onFocus={() => { if (results.length === 0) search(''); else setOpen(true); }}
+          onBlur={() => setTimeout(() => setOpen(false), 200)}
+        />
+      </div>
+      {open && results.length > 0 && (
+        <div className="absolute z-40 mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl overflow-y-auto max-h-60">
+          {results.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onMouseDown={() => {
+                onSelect(s);
+                setQuery(s.name);
+                setOpen(false);
+              }}
+              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0"
+            >
+              <div>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">{s.name}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{s.phone} · {s.contact_person}</p>
+              </div>
+              <span className="text-xs text-indigo-500 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-indigo-950/30 px-2 py-1 rounded">Chọn</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────
 export default function NewImportPage() {
   const router = useRouter();
@@ -96,6 +161,7 @@ export default function NewImportPage() {
 
   // Form fields
   const [supplierId, setSupplierId]           = useState('');
+  const [supplierName, setSupplierName]       = useState('');
   const [importDate, setImportDate]           = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote]                       = useState('');
   const [transportNote, setTransportNote]     = useState('');
@@ -227,17 +293,14 @@ export default function NewImportPage() {
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
                 Nhà cung cấp <span className="text-red-400">*</span>
               </label>
-              <select
-                value={supplierId}
-                onChange={(e) => setSupplierId(e.target.value)}
-                required
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">-- Chọn nhà cung cấp --</option>
-                {suppliers.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <SupplierSearch
+                productIds={details.map(d => d.product_id).filter(Boolean)}
+                initialSupplierName={supplierName}
+                onSelect={(s) => {
+                  setSupplierId(s.id);
+                  setSupplierName(s.name);
+                }}
+              />
             </div>
 
             {/* Import Date */}

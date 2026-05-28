@@ -309,6 +309,7 @@ export default function ImportsPage() {
                   setSearch(''); setFromDate(''); setToDate(''); setStatus('');
                   setFilterSearch(''); setFilterFromDate(''); setFilterToDate('');
                   setPage(1);
+                  setRefreshKey(k => k + 1);
                 }}
             className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >

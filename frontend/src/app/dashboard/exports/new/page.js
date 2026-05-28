@@ -109,6 +109,78 @@ function SellableProductSearch({ value, onSelect, supplierId }) {
   );
 }
 
+// ─── Supplier Search Dropdown ─────────────────────────────────
+function SupplierSearch({ onSelect, onClear, initialSupplierName }) {
+  const [query, setQuery] = useState(initialSupplierName || '');
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (initialSupplierName) setQuery(initialSupplierName);
+  }, [initialSupplierName]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const search = async (q) => {
+    setQuery(q);
+    try {
+      const res = await api.get(`/suppliers?search=${encodeURIComponent(q)}&limit=100`);
+      const data = res.data;
+      const list = Array.isArray(data) ? data : (data.data || []);
+      setResults(list);
+      setOpen(true);
+    } catch (_) {}
+  };
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <div className="relative">
+        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+        <input
+          className="w-full rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+          placeholder="Tìm hoặc nhập tên nhà cung cấp..."
+          value={query}
+          onChange={(e) => {
+            const val = e.target.value;
+            search(val);
+            if (val === '' && onClear) onClear();
+          }}
+          onFocus={() => { if (results.length === 0) search(''); else setOpen(true); }}
+        />
+      </div>
+      {open && results.length > 0 && (
+        <div className="absolute z-40 mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl overflow-y-auto max-h-60">
+          {results.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onMouseDown={() => {
+                onSelect(s);
+                setQuery(s.name);
+                setOpen(false);
+              }}
+              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0"
+            >
+              <div>
+                <p className="font-semibold text-slate-800 dark:text-slate-200">{s.name}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{s.phone} · {s.contact_person}</p>
+              </div>
+              <span className="text-xs text-indigo-500 dark:text-indigo-400 font-medium">Chọn</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function NewExportPage() {
   const router = useRouter();
 
@@ -145,7 +217,7 @@ export default function NewExportPage() {
   const removeRow = (key) => setDetails((d) => d.filter((r) => r._key !== key));
   const updateRow = (key, field, val) =>
     setDetails((d) => d.map((r) => (r._key === key ? { ...r, [field]: val } : r)));
-  const setProduct = (key, product) =>
+  const setProduct = (key, product) => {
     setDetails((d) =>
       d.map((r) =>
         r._key === key
@@ -161,6 +233,10 @@ export default function NewExportPage() {
           : r
       )
     );
+    if (reason === 'RETURN' && !supplierId && product.supplier_ids && product.supplier_ids.length > 0) {
+      setSupplierId(String(product.supplier_ids[0]));
+    }
+  };
 
   const totalAmount = details.reduce(
     (s, d) => s + (parseFloat(d.selling_price) || 0) * (parseInt(d.quantity) || 0),
@@ -302,17 +378,11 @@ export default function NewExportPage() {
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
                   Nhà cung cấp <span className="text-red-400">*</span>
                 </label>
-                <select
-                  value={supplierId}
-                  onChange={(e) => setSupplierId(e.target.value)}
-                  required={reason === 'RETURN'}
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">-- Chọn NCC --</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                <SupplierSearch
+                  initialSupplierName={suppliers.find((s) => String(s.id) === String(supplierId))?.name || ''}
+                  onSelect={(s) => setSupplierId(String(s.id))}
+                  onClear={() => setSupplierId('')}
+                />
                 <p className="text-xs text-amber-500 mt-2">
                   Lưu ý: Chỉ hỗ trợ lấy lô thông qua FEFO tạm thời hoặc bạn cần chọn lô trong backend. Hiện tại FEFO sẽ dùng cho mọi SP.
                 </p>

@@ -214,7 +214,7 @@ export default function NewImportPage() {
   const removeRow = (key) => setDetails((d) => d.filter((r) => r._key !== key));
   const updateRow = (key, field, val) =>
     setDetails((d) => d.map((r) => (r._key === key ? { ...r, [field]: val } : r)));
-  const setProduct = (key, product) =>
+  const setProduct = (key, product) => {
     setDetails((d) =>
       d.map((r) =>
         r._key === key
@@ -229,6 +229,10 @@ export default function NewImportPage() {
           : r
       )
     );
+    if (!supplierId && product.supplier_ids && product.supplier_ids.length > 0) {
+      setSupplierId(String(product.supplier_ids[0]));
+    }
+  };
 
   // ── Computed total ──────────────────────────────────────────
   const totalAmount = details.reduce(

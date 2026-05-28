@@ -27,6 +27,7 @@ const serializeProduct = (p, currentStock = 0) => {
     created_at: p.created_at,
     current_stock: currentStock,
     is_low_stock: currentStock < p.min_stock,
+    supplier_ids: p.supplier_prices ? p.supplier_prices.map(sp => sp.supplier_id) : [],
   };
 };
 
@@ -194,7 +195,10 @@ exports.getAllProducts = async (req, res) => {
         where: { supplier_id: supplierIdInt },
         include: {
           product: {
-            include: { default_location: true }
+            include: { 
+              default_location: true,
+              supplier_prices: { select: { supplier_id: true } }
+            }
           }
         }
       });
@@ -216,7 +220,10 @@ exports.getAllProducts = async (req, res) => {
     } else {
       products = await prisma.product.findMany({
         where,
-        include: { default_location: true },
+        include: { 
+          default_location: true,
+          supplier_prices: { select: { supplier_id: true } }
+        },
         orderBy: { product_code: 'asc' },
         take: limitVal,
         skip: offsetVal

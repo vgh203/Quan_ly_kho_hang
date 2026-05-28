@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
 import { 
   LayoutDashboard, Package, LogOut, Menu, X, Sun, Moon,
-  User, Shield, UserCheck, Warehouse, MapPin, ClipboardList, TrendingUp
+  User, Shield, UserCheck, Warehouse, MapPin, ClipboardList, TrendingUp, ChevronDown
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }) {
@@ -15,6 +15,18 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState('dark');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Load and apply initial theme preference
   useEffect(() => {
@@ -127,29 +139,7 @@ export default function DashboardLayout({ children }) {
           </nav>
         </div>
 
-        {/* User profile footer in Sidebar */}
-        <div className="border-t border-slate-200 dark:border-slate-900 pt-4 mt-auto">
-          <div className="flex items-center gap-3 px-2 mb-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
-              <User className="h-4.5 w-4.5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200">{user?.full_name}</p>
-              <span className={`inline-block text-[9px] font-bold uppercase tracking-wider ${
-                user?.role === 'admin' ? 'text-indigo-600 dark:text-indigo-400' : 'text-blue-600 dark:text-blue-400'
-              }`}>
-                {user?.role}
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-red-500 transition-all duration-200 hover:bg-red-500/10 hover:text-red-400"
-          >
-            <LogOut className="h-4.5 w-4.5" />
-            Đăng xuất
-          </button>
-        </div>
+        {/* User profile footer in Sidebar removed to top right */}
       </aside>
 
       {/* Sidebar - Mobile Layout */}
@@ -193,24 +183,7 @@ export default function DashboardLayout({ children }) {
               </nav>
             </div>
 
-            <div className="border-t border-slate-200 dark:border-slate-900 pt-4 mt-auto">
-              <div className="flex items-center gap-3 px-2 mb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
-                  <User className="h-4.5 w-4.5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-200">{user?.full_name}</p>
-                  <span className="text-[10px] font-medium text-slate-500 uppercase">{user?.role}</span>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-red-500 hover:bg-red-500/10 hover:text-red-400"
-              >
-                <LogOut className="h-4.5 w-4.5" />
-                Đăng xuất
-              </button>
-            </div>
+            {/* User profile footer in Sidebar removed to top right */}
           </aside>
         </div>
       )}
@@ -249,9 +222,41 @@ export default function DashboardLayout({ children }) {
               )}
             </button>
 
-            <div className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 border-l border-slate-200 dark:border-slate-800 pl-4">
-              <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span className="hidden sm:inline">{user?.full_name}</span>
+            {/* Profile Dropdown */}
+            <div ref={dropdownRef} className="relative border-l border-slate-200 dark:border-slate-800 pl-4">
+              <button
+                onClick={() => setIsDropdownOpen((prev) => !prev)}
+                className="flex items-center gap-2 rounded-lg p-1 text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all cursor-pointer"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white shadow-sm">
+                  {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+                <span className="hidden text-sm font-semibold text-slate-700 dark:text-slate-300 md:block">
+                  {user?.full_name}
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2 shadow-xl animate-fade-in z-50 text-slate-800 dark:text-slate-200">
+                  <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-900">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider">Đang đăng nhập</p>
+                    <p className="text-sm font-bold truncate text-slate-800 dark:text-slate-200 mt-0.5">{user?.full_name}</p>
+                    <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mt-1">
+                      {user?.role}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Đăng xuất
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>

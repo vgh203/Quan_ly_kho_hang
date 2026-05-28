@@ -20,6 +20,9 @@ const blankDetail = () => ({
   unit: '',
   quantity: '',
   unit_price: '',
+  mfg_date: '',
+  expiry_date: '',
+  location_id: '',
 });
 
 // ─── Product Search Dropdown ──────────────────────────────────
@@ -166,6 +169,9 @@ export default function NewImportPage() {
           product_id: d.product_id,
           quantity: parseInt(d.quantity),
           unit_price: parseFloat(d.unit_price) || 0,
+          mfg_date: d.mfg_date || null,
+          expiry_date: d.expiry_date || null,
+          location_id: d.location_id ? parseInt(d.location_id) : null,
         })),
       });
 
@@ -393,6 +399,40 @@ export default function NewImportPage() {
                         onChange={(e) => updateRow(row._key, 'unit_price', e.target.value)}
                         placeholder="0"
                         className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    {/* Location */}
+                    <div>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Vị trí kho</label>
+                      <select
+                        value={row.location_id}
+                        onChange={(e) => updateRow(row._key, 'location_id', e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">-- Chọn vị trí --</option>
+                        {locations.map((l) => (
+                          <option key={l.id} value={l.id}>{l.location_code} - {l.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* MFG date */}
+                    <div>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Ngày sản xuất</label>
+                      <input
+                        type="date"
+                        value={row.mfg_date}
+                        onChange={(e) => updateRow(row._key, 'mfg_date', e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                    {/* Expiry date */}
+                    <div>
+                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Hạn sử dụng</label>
+                      <input
+                        type="date"
+                        value={row.expiry_date}
+                        onChange={(e) => updateRow(row._key, 'expiry_date', e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                   </div>

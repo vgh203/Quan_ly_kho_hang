@@ -322,7 +322,7 @@ export default function NewImportPage() {
 
         {/* ── RIGHT: Product Details Table ──────────────────────── */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800">
               <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
                 <Package className="h-4 w-4 text-indigo-400" />

@@ -201,7 +201,17 @@ exports.getAllProducts = async (req, res) => {
       
       products = supplierProductPrices
         .map(spp => spp.product)
-        .filter(p => p.is_active)
+        .filter(p => {
+          if (!p.is_active) return false;
+          if (category && p.category !== category) return false;
+          if (search) {
+            const s = search.toLowerCase();
+            const nameMatch = p.name && p.name.toLowerCase().includes(s);
+            const codeMatch = p.product_code && p.product_code.toLowerCase().includes(s);
+            if (!nameMatch && !codeMatch) return false;
+          }
+          return true;
+        })
         .slice(offsetVal, offsetVal + limitVal);
     } else {
       products = await prisma.product.findMany({

@@ -250,8 +250,8 @@ exports.create = async (req, res) => {
         if (totalAvailable < qty_needed) {
           const product = await tx.product.findUnique({ where: { id: product_id }, select: { name: true } });
           const errorMsg = reason === 'RETURN'
-            ? \`Sản phẩm "\${product?.name || product_id}" không đủ tồn kho của nhà cung cấp này để trả. Khả dụng: \${totalAvailable}, Yêu cầu: \${qty_needed}.\`
-            : \`Sản phẩm "\${product?.name || product_id}" không đủ tồn kho bán được. Khả dụng: \${totalAvailable}, Yêu cầu: \${qty_needed}.\`;
+            ? `Sản phẩm "${product?.name || product_id}" không đủ tồn kho của nhà cung cấp này để trả. Khả dụng: ${totalAvailable}, Yêu cầu: ${qty_needed}.`
+            : `Sản phẩm "${product?.name || product_id}" không đủ tồn kho bán được. Khả dụng: ${totalAvailable}, Yêu cầu: ${qty_needed}.`;
           throw new Error(errorMsg);
         }
 
@@ -290,7 +290,7 @@ exports.create = async (req, res) => {
         }
 
         if (remaining > 0) {
-          throw new Error(\`Lỗi phân bổ: Không thể hoàn tất \${remaining} đơn vị cho sản phẩm ID \${product_id}.\`);
+          throw new Error(`Lỗi phân bổ: Không thể hoàn tất ${remaining} đơn vị cho sản phẩm ID ${product_id}.`);
         }
       }
 

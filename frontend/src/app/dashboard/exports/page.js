@@ -75,6 +75,33 @@ export default function ExportsPage() {
   const [filterToDate, setFilterToDate] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Suggestions state
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getSuggestions = () => {
+    if (!search.trim()) return [];
+    const term = search.toLowerCase();
+    const matches = new Set();
+    receipts.forEach(r => {
+      if (r.receipt_code?.toLowerCase().includes(term)) matches.add(r.receipt_code);
+      const targetName = r.reason === 'SELL' ? r.customer_name : r.supplier_name;
+      if (targetName?.toLowerCase().includes(term)) matches.add(targetName);
+    });
+    return Array.from(matches).slice(0, 6);
+  };
+  const suggestions = getSuggestions();
+
   // Stats
   const [stats, setStats] = useState(null);
 
@@ -188,16 +215,46 @@ export default function ExportsPage() {
       {/* ── Filters ─────────────────────────────────────────── */}
       <div className="flex flex-wrap gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-[200px]" ref={searchContainerRef}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <input
             type="text"
             placeholder="Tìm mã phiếu, khách hàng, NCC..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && applyFilter()}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setShowSuggestions(false);
+                applyFilter();
+              }
+            }}
             className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-9 pr-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg overflow-hidden">
+              {suggestions.map((sug, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    setSearch(sug);
+                    setShowSuggestions(false);
+                    setFilterSearch(sug);
+                    setFilterFromDate(fromDate);
+                    setFilterToDate(toDate);
+                    setPage(1);
+                    setRefreshKey(k => k + 1);
+                  }}
+                  className="px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition-colors"
+                >
+                  {sug}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         {/* Status Filter */}
         <select

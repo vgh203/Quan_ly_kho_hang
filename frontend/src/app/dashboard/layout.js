@@ -6,7 +6,8 @@ import { useAuthStore } from '@/store/useAuthStore';
 import Link from 'next/link';
 import { 
   LayoutDashboard, Package, LogOut, Menu, X, Sun, Moon,
-  User, Shield, UserCheck, Warehouse, MapPin, ClipboardList, TrendingUp, ChevronDown
+  User, Shield, UserCheck, Warehouse, MapPin, ClipboardList, TrendingUp, ChevronDown,
+  ArrowDownToLine, ArrowUpFromLine
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }) {
@@ -88,6 +89,16 @@ export default function DashboardLayout({ children }) {
       name: 'Nhà cung cấp & Bản đồ',
       href: '/dashboard/suppliers',
       icon: MapPin,
+    },
+    {
+      name: 'Phiếu nhập kho',
+      href: '/dashboard/imports',
+      icon: ArrowDownToLine,
+    },
+    {
+      name: 'Phiếu xuất kho',
+      href: '/dashboard/exports',
+      icon: ArrowUpFromLine,
     },
   ];
 

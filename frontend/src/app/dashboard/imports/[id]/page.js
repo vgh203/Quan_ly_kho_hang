@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -8,7 +10,7 @@ import {
   ArrowDownToLine, ArrowLeft, Truck, Package, CheckCircle2,
   XCircle, Clock, AlertCircle, ClipboardCheck, Building2,
   Calendar, User, FileText, MapPin, Hash, DollarSign, Edit3,
-  Loader2
+  Loader2, Printer, Download
 } from 'lucide-react';
 
 import api from '@/lib/api';
@@ -57,6 +59,26 @@ export default function ImportDetailPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
   const [actionLoading, setActionLoading] = useState('');
+  const printRef = useRef(null);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleExportPDF = async () => {
+    if (!printRef.current) return;
+    try {
+      const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`PhieuNhapKho_${receipt?.receipt_code}.pdf`);
+    } catch (e) {
+      alert('Không thể xuất PDF: ' + e.message);
+    }
+  };
 
   // Inspect modal
   const [showInspect, setShowInspect]     = useState(false);
@@ -165,7 +187,7 @@ export default function ImportDetailPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between no-print">
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard/imports"
@@ -183,7 +205,17 @@ export default function ImportDetailPage() {
             </div>
           </div>
         </div>
-        <StatusBadge status={receipt.status} />
+        <div className="flex items-center gap-3">
+          <button onClick={handlePrint} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            <Printer className="h-4 w-4" />
+            <span className="hidden sm:inline">In phiếu</span>
+          </button>
+          <button onClick={handleExportPDF} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Xuất PDF</span>
+          </button>
+          <StatusBadge status={receipt.status} />
+        </div>
       </div>
 
       {/* ── Error ───────────────────────────────────────────────── */}
@@ -193,6 +225,16 @@ export default function ImportDetailPage() {
           {error}
         </div>
       )}
+
+      )}
+
+      <div ref={printRef} className="print-content space-y-6 print:bg-white print:text-black">
+        {/* Printable Header inside PDF (only visible when printing or in PDF) */}
+        <div className="hidden print:block mb-8 border-b pb-4">
+          <h1 className="text-2xl font-bold text-center mb-2">PHIẾU NHẬP KHO</h1>
+          <p className="text-center text-sm">Mã phiếu: {receipt.receipt_code}</p>
+          <p className="text-center text-sm">Trạng thái: {STATUS_MAP[receipt.status]?.label}</p>
+        </div>
 
       {/* ── Progress Steps ──────────────────────────────────────── */}
       {receipt.status !== 'CANCELLED' && (
@@ -579,6 +621,9 @@ export default function ImportDetailPage() {
           </div>
         </div>
       )}
+      
+      </div> {/* End print-content */}
+
     </div>
   );
 }

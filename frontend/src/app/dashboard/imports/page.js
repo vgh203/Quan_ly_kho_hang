@@ -7,8 +7,9 @@ import { useAuthStore } from '@/store/useAuthStore';
 import {
   ArrowDownToLine, Plus, Search, Filter, RefreshCw,
   Eye, Trash2, ChevronLeft, ChevronRight, TrendingDown,
-  Truck, CheckCircle2, XCircle, Clock, Package, AlertCircle
+  Truck, CheckCircle2, XCircle, Clock, Package, AlertCircle, Download
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 import api from '@/lib/api';
 // ─── Status config ────────────────────────────────────────────
@@ -105,6 +106,24 @@ export default function ImportsPage() {
     }
   };
 
+  const handleExportExcel = () => {
+    if (receipts.length === 0) return;
+    const data = receipts.map((r, i) => ({
+      'STT': i + 1,
+      'Mã phiếu': r.receipt_code,
+      'Nhà cung cấp': r.supplier?.name || '',
+      'Ngày nhập': r.import_date ? new Date(r.import_date).toLocaleDateString('vi-VN') : '',
+      'Tổng tiền (VNĐ)': r.total_amount,
+      'Trạng thái': STATUS_MAP[r.status]?.label || r.status,
+      'Ghi chú': r.note || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "PhieuNhapKho");
+    XLSX.writeFile(workbook, `Danh_Sach_Phieu_Nhap_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Page Header ────────────────────────────────────── */}
@@ -120,13 +139,22 @@ export default function ImportsPage() {
             </p>
           </div>
         </div>
-        <Link
-          href="/dashboard/imports/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 active:bg-indigo-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Tạo phiếu nhập
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={handleExportExcel}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-emerald-500 active:bg-emerald-700 transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            Xuất Excel
+          </button>
+          <Link
+            href="/dashboard/imports/new"
+            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 active:bg-indigo-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Tạo phiếu nhập
+          </Link>
+        </div>
       </div>
 
       {/* ── Stats Cards ─────────────────────────────────────── */}

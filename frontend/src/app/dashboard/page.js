@@ -145,7 +145,7 @@ export default function DashboardPage() {
         <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/20 p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-550">Phiếu xuất bán tháng này</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-550">Phiếu xuất kho tháng này</p>
               <h3 className="mt-2 text-3xl font-bold text-slate-850 dark:text-white">{thisMonth.export_receipts_count}</h3>
             </div>
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-650 dark:text-amber-400">

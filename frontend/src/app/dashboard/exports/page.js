@@ -225,7 +225,7 @@ export default function ExportsPage() {
           onClick={applyFilter}
           className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
         >
-          <Filter className="h-4 w-4" />
+          <Filter className="h-4 w-4 pointer-events-none" />
           Lọc
         </button>
         {(search || status || reason || fromDate || toDate) && (
@@ -233,7 +233,7 @@ export default function ExportsPage() {
             onClick={() => { setSearch(''); setStatus(''); setReason(''); setFromDate(''); setToDate(''); setPage(1); }}
             className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className="h-4 w-4 pointer-events-none" />
             Xoá lọc
           </button>
         )}

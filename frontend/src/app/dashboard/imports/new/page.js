@@ -449,37 +449,38 @@ export default function NewImportPage() {
                   </div>
 
                   {/* Category and Product search */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        Phân mục
-                      </label>
-                      <select
-                        value={row.category || ''}
-                        onChange={(e) => updateRow(row._key, 'category', e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="">Tất cả phân mục...</option>
-                        <option value="Thực phẩm tươi sống">Thực phẩm tươi sống</option>
-                        <option value="Thực phẩm khô và Nhu yếu phẩm">Thực phẩm khô và Nhu yếu phẩm</option>
-                        <option value="Đồ uống và bánh kẹo">Đồ uống và bánh kẹo</option>
-                        <option value="Hóa mỹ phẩm">Hóa mỹ phẩm</option>
-                        <option value="Đồ dùng gia đình">Đồ dùng gia đình</option>
-                      </select>
-                    </div>
+                  <div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                          Phân mục
+                        </label>
+                        <select
+                          value={row.category || ''}
+                          onChange={(e) => updateRow(row._key, 'category', e.target.value)}
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="">Tất cả phân mục...</option>
+                          <option value="Thực phẩm tươi sống">Thực phẩm tươi sống</option>
+                          <option value="Thực phẩm khô và Nhu yếu phẩm">Thực phẩm khô và Nhu yếu phẩm</option>
+                          <option value="Đồ uống và bánh kẹo">Đồ uống và bánh kẹo</option>
+                          <option value="Hóa mỹ phẩm">Hóa mỹ phẩm</option>
+                          <option value="Đồ dùng gia đình">Đồ dùng gia đình</option>
+                        </select>
+                      </div>
 
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        Sản phẩm <span className="text-red-400">*</span>
-                      </label>
-                      <ProductSearch
-                        supplierId={supplierId}
-                        category={row.category}
-                        onSelect={(p) => setProduct(row._key, p)}
-                        onClear={() => setProduct(row._key, { id: '', name: '', product_code: '', unit: '', unit_price: '' })}
-                      />
+                      <div>
+                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                          Sản phẩm <span className="text-red-400">*</span>
+                        </label>
+                        <ProductSearch
+                          supplierId={supplierId}
+                          category={row.category}
+                          onSelect={(p) => setProduct(row._key, p)}
+                          onClear={() => setProduct(row._key, { id: '', name: '', product_code: '', unit: '', unit_price: '' })}
+                        />
+                      </div>
                     </div>
-                  </div>
                     {row.product_name && (
                       <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium">{row.product_name}</p>
                     )}

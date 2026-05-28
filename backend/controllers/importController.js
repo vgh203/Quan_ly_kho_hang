@@ -63,7 +63,13 @@ exports.getAll = async (req, res) => {
         include: {
           supplier: { select: { id: true, name: true } },
           creator: { select: { id: true, full_name: true } },
-          details: { select: { id: true, quantity: true } },
+          details: { 
+            select: { 
+              id: true, 
+              quantity: true,
+              product: { select: { name: true } }
+            } 
+          },
         },
         orderBy: { import_date: 'desc' },
         skip,
@@ -81,6 +87,7 @@ exports.getAll = async (req, res) => {
       total_amount: Number(r.total_amount),
       items_count: r.details.length,
       total_qty: r.details.reduce((s, d) => s + d.quantity, 0),
+      product_names: r.details.map((d) => d.product?.name).filter(Boolean),
       created_by: r.creator?.full_name || '—',
       created_at: r.created_at,
       note: r.note,

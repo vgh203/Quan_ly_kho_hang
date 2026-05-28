@@ -97,6 +97,11 @@ export default function ExportsPage() {
       if (r.receipt_code?.toLowerCase().includes(term)) matches.add(r.receipt_code);
       const targetName = r.reason === 'SELL' ? r.customer_name : r.supplier_name;
       if (targetName?.toLowerCase().includes(term)) matches.add(targetName);
+      if (r.product_names && Array.isArray(r.product_names)) {
+        r.product_names.forEach(p => {
+          if (p?.toLowerCase().includes(term)) matches.add(p);
+        });
+      }
     });
     return Array.from(matches).slice(0, 6);
   };

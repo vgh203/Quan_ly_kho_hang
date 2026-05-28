@@ -192,6 +192,7 @@ export default function ExportDetailPage() {
           <div>
             <h1 className="text-2xl font-bold uppercase">Phiếu Xuất Kho</h1>
             <p className="text-sm mt-1">Mã phiếu: <strong>{receipt.receipt_code}</strong></p>
+            <p className="text-sm mt-1">Loại phiếu: <strong>{REASON_MAP[receipt.reason]?.label || receipt.reason}</strong></p>
           </div>
           <div className="text-right">
             <h2 className="text-xl font-bold">HỆ THỐNG QUẢN LÝ KHO</h2>

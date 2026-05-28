@@ -222,10 +222,20 @@ exports.create = async (req, res) => {
           throw new Error(`Sản phẩm hoặc số lượng không hợp lệ.`);
         }
 
-        if (reason === 'SELL' || reason === 'DISPOSE' || reason === 'INTERNAL') {
-          // ── FEFO: lấy lô hàng theo thứ tự hết hạn sớm nhất ──
-          const lots = await tx.$queryRaw`
-            SELECT vls.lot_id, vls.available_lot_stock::int, vls.expiry_date, vls.batch_code
+        // ── Allocate lots (FEFO) for ALL reasons ──
+        let lots;
+        if (reason === 'RETURN') {
+          lots = await tx.$queryRaw`
+            SELECT vls.lot_id, vls.available_lot_stock::int, vls.expiry_date, vls.batch_code, vls.unit_price::float as unit_price
+            FROM v_lot_stock vls
+            WHERE vls.product_id = ${product_id}
+              AND vls.available_lot_stock > 0
+              AND vls.supplier_id = ${parseInt(supplier_id)}
+            ORDER BY vls.expiry_date ASC NULLS LAST, vls.import_date ASC
+          `;
+        } else {
+          lots = await tx.$queryRaw`
+            SELECT vls.lot_id, vls.available_lot_stock::int, vls.expiry_date, vls.batch_code, 0::float as unit_price
             FROM v_lot_stock vls
             JOIN products p ON p.id = vls.product_id
             WHERE vls.product_id = ${product_id}
@@ -233,94 +243,54 @@ exports.create = async (req, res) => {
               AND (vls.expiry_date IS NULL OR (vls.expiry_date - CURRENT_DATE) >= p.min_days_to_sell)
             ORDER BY vls.expiry_date ASC NULLS LAST, vls.import_date ASC
           `;
+        }
 
-          // Check total sellable stock
-          const totalAvailable = lots.reduce((s, l) => s + l.available_lot_stock, 0);
-          if (totalAvailable < qty_needed) {
-            const product = await tx.product.findUnique({ where: { id: product_id }, select: { name: true } });
-            throw new Error(
-              `Sản phẩm "${product?.name || product_id}" không đủ tồn kho bán được. ` +
-              `Khả dụng: ${totalAvailable}, Yêu cầu: ${qty_needed}.`
-            );
-          }
+        // Check total available stock based on reason
+        const totalAvailable = lots.reduce((s, l) => s + l.available_lot_stock, 0);
+        if (totalAvailable < qty_needed) {
+          const product = await tx.product.findUnique({ where: { id: product_id }, select: { name: true } });
+          const errorMsg = reason === 'RETURN'
+            ? \`Sản phẩm "\${product?.name || product_id}" không đủ tồn kho của nhà cung cấp này để trả. Khả dụng: \${totalAvailable}, Yêu cầu: \${qty_needed}.\`
+            : \`Sản phẩm "\${product?.name || product_id}" không đủ tồn kho bán được. Khả dụng: \${totalAvailable}, Yêu cầu: \${qty_needed}.\`;
+          throw new Error(errorMsg);
+        }
 
-          // Allocate FEFO
-          let remaining = qty_needed;
-          for (const lot of lots) {
-            if (remaining <= 0) break;
-            const take = Math.min(remaining, lot.available_lot_stock);
+        // Allocate remaining quantity
+        let remaining = qty_needed;
+        for (const lot of lots) {
+          if (remaining <= 0) break;
+          const take = Math.min(remaining, lot.available_lot_stock);
 
-            await tx.exportDetail.create({
-              data: {
-                receipt_id: receipt.id,
-                product_id,
-                import_detail_id: lot.lot_id,
-                quantity: take,
-                selling_price,
-              },
-            });
+          const finalPrice = reason === 'RETURN' ? (lot.unit_price || 0) : selling_price;
 
-            // Update location capacity
-            const lotDetail = await tx.importDetail.findUnique({
-              where: { id: lot.lot_id },
-              select: { location_id: true },
-            });
-            if (lotDetail?.location_id) {
-              await tx.location.update({
-                where: { id: lotDetail.location_id },
-                data: { current_occupied: { decrement: take } },
-              });
-            }
-
-            remaining -= take;
-            totalAmount += take * selling_price;
-          }
-
-          if (remaining > 0) {
-            throw new Error(`Lỗi phân bổ FEFO: Không thể hoàn tất ${remaining} đơn vị cho sản phẩm ID ${product_id}.`);
-          }
-        } else {
-          // ── RETURN: lấy đúng lô hàng chỉ định ──
-          const lot_id = parseInt(item.import_detail_id);
-          if (!lot_id) {
-            throw new Error('Phiếu trả hàng phải chỉ định lô hàng (import_detail_id).');
-          }
-
-          const lotRows = await tx.$queryRaw`
-            SELECT lot_id, product_id, supplier_id::int, current_lot_stock::int,
-                   available_lot_stock::int, batch_code, unit_price::float
-            FROM v_lot_stock
-            WHERE lot_id = ${lot_id} AND product_id = ${product_id}
-          `;
-
-          if (lotRows.length === 0) {
-            throw new Error(`Không tìm thấy lô hàng ID ${lot_id} của sản phẩm ${product_id}.`);
-          }
-
-          const lotInfo = lotRows[0];
-          if (lotInfo.supplier_id !== parseInt(supplier_id)) {
-            throw new Error(
-              `Lô hàng '${lotInfo.batch_code}' không thuộc nhà cung cấp đã chọn.`
-            );
-          }
-          if (lotInfo.available_lot_stock < qty_needed) {
-            throw new Error(
-              `Lô hàng '${lotInfo.batch_code}' chỉ còn khả dụng ${lotInfo.available_lot_stock}, ` +
-              `không đủ để trả ${qty_needed}.`
-            );
-          }
-
-          const return_price = lotInfo.unit_price || 0;
           await tx.exportDetail.create({
             data: {
               receipt_id: receipt.id,
               product_id,
-              import_detail_id: lot_id,
-              quantity: qty_needed,
-              selling_price: return_price,
+              import_detail_id: lot.lot_id,
+              quantity: take,
+              selling_price: finalPrice,
             },
           });
-          totalAmount += qty_needed * return_price;
+
+          // Update location capacity
+          const lotDetail = await tx.importDetail.findUnique({
+            where: { id: lot.lot_id },
+            select: { location_id: true },
+          });
+          if (lotDetail?.location_id) {
+            await tx.location.update({
+              where: { id: lotDetail.location_id },
+              data: { current_occupied: { decrement: take } },
+            });
+          }
+
+          remaining -= take;
+          totalAmount += take * finalPrice;
+        }
+
+        if (remaining > 0) {
+          throw new Error(\`Lỗi phân bổ: Không thể hoàn tất \${remaining} đơn vị cho sản phẩm ID \${product_id}.\`);
         }
       }
 

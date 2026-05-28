@@ -87,7 +87,7 @@ export default function DashboardLayout({ children }) {
         <div className="space-y-6">
           {/* Logo Brand */}
           <div className="flex items-center gap-2.5 px-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-tr from-violet-600 to-blue-500 shadow-md">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600 shadow-md">
               <Warehouse className="h-5 w-5 text-white" />
             </div>
             <div>

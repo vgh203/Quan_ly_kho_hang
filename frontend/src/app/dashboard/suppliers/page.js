@@ -284,7 +284,7 @@ export default function SuppliersPage() {
         {isAdmin && (
           <button
             onClick={handleAddClick}
-            className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:from-violet-500 hover:to-blue-500 hover:shadow-lg hover:shadow-violet-500/25 active:scale-[0.98] transition-all"
+            className="flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-violet-700 active:scale-[0.98] transition-all cursor-pointer"
           >
             <Plus className="h-4.5 w-4.5" />
             Thêm nhà cung cấp
@@ -335,7 +335,7 @@ export default function SuppliersPage() {
               <span className="text-xs text-slate-500">Không tìm thấy đối tác nào.</span>
             </div>
           ) : (
-            <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+            <div className="space-y-3 max-h-[390px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
               {filteredSuppliers.map((sup) => {
                 const isSelected = selectedSupplier && selectedSupplier.id === sup.id;
                 return (
@@ -416,7 +416,7 @@ export default function SuppliersPage() {
         </div>
 
         {/* Right Side: Leaflet Routing Map (7 Cols) */}
-        <div className="lg:col-span-7 flex flex-col h-[500px] lg:h-[610px]">
+        <div className="lg:col-span-7 flex flex-col h-[450px]">
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-900 pb-2 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Bản đồ định vị & Tuyến đường Logistics (OSRM)
@@ -720,7 +720,7 @@ export default function SuppliersPage() {
                 <button
                   type="submit"
                   disabled={submitLoading}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-2 text-sm font-semibold text-white hover:from-violet-500 hover:to-blue-500 disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 py-2 text-sm font-semibold text-white hover:bg-violet-700 active:bg-violet-800 disabled:opacity-50 cursor-pointer"
                 >
                   {submitLoading ? (
                     <>

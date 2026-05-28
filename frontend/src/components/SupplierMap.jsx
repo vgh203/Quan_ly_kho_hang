@@ -8,17 +8,9 @@ import 'leaflet/dist/leaflet.css';
 // Warehouse position: District 10, HCMC (Cao Thắng / 3 Tháng 2 intersection)
 const WAREHOUSE_COORDS = [10.762622, 106.660172];
 
-if (typeof window !== 'undefined') {
-  delete L.Icon.Default.prototype._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  });
-}
-
-// Custom icons
+// Custom icons setup
 const createIcon = (color) => {
+  if (typeof window === 'undefined') return null;
   return new L.Icon({
     iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -29,9 +21,50 @@ const createIcon = (color) => {
   });
 };
 
-const warehouseIcon = createIcon('blue');
-const supplierIcon = createIcon('red');
-const selectedIcon = createIcon('violet');
+let warehouseIcon;
+let supplierIcon;
+let selectedIcon;
+
+if (typeof window !== 'undefined') {
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  });
+
+  supplierIcon = createIcon('red');
+  selectedIcon = createIcon('violet');
+
+  // Custom Warehouse SVG Icon
+  warehouseIcon = L.divIcon({
+    className: 'custom-warehouse-div-icon',
+    html: `
+      <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: #7c3aed;
+        color: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.08);
+        border: 2px solid #ffffff;
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18"></path>
+          <path d="M3 10v11h18V10"></path>
+          <path d="M5 21V10l7-5 7 5v11"></path>
+          <path d="M12 21V12"></path>
+        </svg>
+      </div>
+    `,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18]
+  });
+}
 
 // Haversine formula fallback
 const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
@@ -54,7 +87,6 @@ function MapClickHandler({ onMapClick, active }) {
       const { lat, lng } = e.latlng;
       
       try {
-        // Query OSRM for actual road route & driving distance
         const res = await fetch(
           `https://router.project-osrm.org/route/v1/driving/${WAREHOUSE_COORDS[1]},${WAREHOUSE_COORDS[0]};${lng},${lat}?overview=full&geometries=geojson`
         );
@@ -157,7 +189,7 @@ export default function SupplierMap({
   }, [selectedLat, selectedLng, mode]);
 
   return (
-    <div className="h-full w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950/20 relative z-10">
+    <div className="h-full w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20 relative z-10">
       <MapContainer 
         center={WAREHOUSE_COORDS} 
         zoom={11} 
@@ -171,16 +203,18 @@ export default function SupplierMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Central Warehouse Marker */}
-        <Marker position={WAREHOUSE_COORDS} icon={warehouseIcon}>
-          <Popup>
-            <div className="text-slate-900 font-sans p-1">
-              <p className="font-bold text-xs">🚗 Tổng kho Bách Hóa Xanh</p>
-              <p className="text-[10px] text-slate-500">Quận 10, Thành phố Hồ Chí Minh</p>
-              <p className="text-[9px] text-slate-400 font-mono">10.762622, 106.660172</p>
-            </div>
-          </Popup>
-        </Marker>
+        {/* Central Warehouse Marker with Warehouse Icon */}
+        {warehouseIcon && (
+          <Marker position={WAREHOUSE_COORDS} icon={warehouseIcon}>
+            <Popup>
+              <div className="text-slate-900 font-sans p-1">
+                <p className="font-bold text-xs">🏢 Tổng kho Bách Hóa Xanh</p>
+                <p className="text-[10px] text-slate-500">Quận 10, Thành phố Hồ Chí Minh</p>
+                <p className="text-[9px] text-slate-400 font-mono">10.762622, 106.660172</p>
+              </div>
+            </Popup>
+          </Marker>
+        )}
 
         {/* View Mode: Render multiple markers and routing polylines */}
         {mode === 'view' && suppliers.map(sup => {
@@ -190,18 +224,20 @@ export default function SupplierMap({
           
           return (
             <div key={sup.id}>
-              <Marker 
-                position={position} 
-                icon={isSelected ? selectedIcon : supplierIcon}
-              >
-                <Popup>
-                  <div className="text-slate-900 font-sans p-1">
-                    <p className="font-bold text-xs">{sup.name}</p>
-                    <p className="text-[10px] text-slate-600">Đại diện: {sup.contact_person || '—'}</p>
-                    <p className="text-[10px] text-indigo-600 font-semibold">Cự ly thực tế: {sup.distance_km || 0} km</p>
-                  </div>
-                </Popup>
-              </Marker>
+              {supplierIcon && selectedIcon && (
+                <Marker 
+                  position={position} 
+                  icon={isSelected ? selectedIcon : supplierIcon}
+                >
+                  <Popup>
+                    <div className="text-slate-900 font-sans p-1">
+                      <p className="font-bold text-xs">{sup.name}</p>
+                      <p className="text-[10px] text-slate-600">Đại diện: {sup.contact_person || '—'}</p>
+                      <p className="text-[10px] text-indigo-600 font-semibold">Cự ly thực tế: {sup.distance_km || 0} km</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
             </div>
           );
         })}
@@ -213,13 +249,13 @@ export default function SupplierMap({
             color="#8b5cf6" 
             weight={4}
             opacity={0.8}
-            dashArray="1, 8" // beautiful dot sequence for animated feel
+            dashArray="1, 8"
             lineCap="round"
           />
         )}
 
         {/* Selection/Edit Mode: Renders placement marker */}
-        {mode === 'select' && selectedLat && selectedLng && (
+        {mode === 'select' && selectedLat && selectedLng && selectedIcon && (
           <Marker position={[selectedLat, selectedLng]} icon={selectedIcon}>
             <Popup>
               <div className="text-slate-900 font-sans text-xs">
@@ -229,27 +265,16 @@ export default function SupplierMap({
             </Popup>
           </Marker>
         )}
-
-        {/* Map Click Listener */}
-        <MapClickHandler 
-          active={mode === 'select'} 
-          onMapClick={(lat, lng, dist, routeCoords) => {
-            setActiveRoute(routeCoords);
-            if (onPositionSelected) {
-              onPositionSelected(lat, lng, dist);
-            }
-          }}
-        />
       </MapContainer>
       
-      <div className="absolute top-4 left-12 z-[400] rounded-lg bg-slate-950/80 border border-slate-800/80 p-2 text-[10px] text-slate-400 backdrop-blur shadow">
+      <div className="absolute top-4 left-12 z-[400] rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 text-[10px] text-slate-600 dark:text-slate-400 shadow">
         🏢 Kho: Q.10, TP.HCM
       </div>
 
       {mode === 'select' && (
-        <div className="absolute bottom-4 left-4 z-[400] rounded-lg bg-slate-900/95 border border-slate-800 p-2.5 text-xs text-slate-300 max-w-[240px] shadow-lg backdrop-blur">
-          <p className="font-semibold text-violet-400 mb-1">📍 Cách ghim tọa độ:</p>
-          <p className="text-slate-400 leading-4">
+        <div className="absolute bottom-4 left-4 z-[400] rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 text-xs text-slate-600 dark:text-slate-300 max-w-[240px] shadow-lg">
+          <p className="font-semibold text-violet-600 dark:text-violet-400 mb-1">📍 Cách ghim tọa độ:</p>
+          <p className="text-slate-500 dark:text-slate-400 leading-4">
             Click vào bản đồ hoặc điền địa chỉ rồi bấm <b>"Định vị"</b>. Tuyến đường thực tế và khoảng cách đường đi (km) sẽ được tính toán qua OSRM.
           </p>
         </div>

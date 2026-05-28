@@ -45,16 +45,16 @@ async function main() {
   // 3. Seed Suppliers
   console.log('Seeding 10 Bach Hoa Xanh-like suppliers...');
   const suppliersData = [
-    { name: 'Công ty Cổ phần Sữa Việt Nam (Vinamilk)', contact_person: 'Nguyễn Hữu Phát', phone: '02854155555', email: 'vinamilk@vinamilk.com.vn', address: '10 Tân Trào, Tân Phú, Quận 7, TP. Hồ Chí Minh', distance_km: 12.5 },
-    { name: 'Công ty TNHH Nước Giải Khát Coca-Cola Việt Nam', contact_person: 'Lê Đình Luân', phone: '02838961000', email: 'cocacola@coca-cola.com.vn', address: 'Xa Lộ Hà Nội, Linh Trung, Thủ Đức, TP. Hồ Chí Minh', distance_km: 28.0 },
-    { name: 'Công ty Cổ phần Hàng Tiêu dùng Masan', contact_person: 'Phạm Hoàng Nam', phone: '02862565660', email: 'masan@masan.com.vn', address: '12 Tôn Đức Thắng, Bến Nghé, Quận 1, TP. Hồ Chí Minh', distance_km: 8.5 },
-    { name: 'Công ty TNHH Unilever Việt Nam', contact_person: 'Trần Thị Lan', phone: '02854135686', email: 'unilever@unilever.com.vn', address: '156 Nguyễn Lương Bằng, Tân Phú, Quận 7, TP. Hồ Chí Minh', distance_km: 145.0 },
-    { name: 'Công ty TNHH Nestlé Việt Nam', contact_person: 'Nguyễn Văn Thành', phone: '02839106600', email: 'nestle@nestle.com.vn', address: 'KCN Biên Hòa 2, Long Bình, Biên Hòa, Đồng Nai', distance_km: 75.5 },
-    { name: 'Công ty Cổ phần Acecook Việt Nam', contact_person: 'Trương Công Vinh', phone: '02838154060', email: 'acecook@acecook.com.vn', address: 'Lô II-3 KCN Tân Bình, Tân Phú, TP. Hồ Chí Minh', distance_km: 18.0 },
-    { name: 'Công ty Cổ phần Tập đoàn KIDO', contact_person: 'Mai Văn Tuyến', phone: '02838270468', email: 'kido@kido.com.vn', address: '138 - 142 Hai Bà Trưng, Quận 1, TP. Hồ Chí Minh', distance_km: 6.2 },
-    { name: 'Công ty TNHH Suntory PepsiCo Việt Nam', contact_person: 'Hoàng Thị Mai', phone: '02838219437', email: 'pepsico@suntorypepsico.vn', address: '88 Đồng Khởi, Bến Nghé, Quận 1, TP. Hồ Chí Minh', distance_km: 32.5 },
-    { name: 'Công ty TNHH L\'Oreal Việt Nam', contact_person: 'Bùi Minh Trí', phone: '02839369168', email: 'loreal@loreal.com.vn', address: '72 Lê Thánh Tôn, Bến Nghé, Quận 1, TP. Hồ Chí Minh', distance_km: 380.0 },
-    { name: 'Công ty Cổ phần Chăn nuôi C.P. Việt Nam', contact_person: 'Phạm Tiến Dũng', phone: '02513836251', email: 'cpvietnam@cp.com.vn', address: 'KCN Biên Hòa 2, Biên Hòa, Đồng Nai', distance_km: 62.0 }
+    { name: 'Công ty Cổ phần Sữa Việt Nam (Vinamilk)', contact_person: 'Nguyễn Hữu Phát', phone: '02854155555', email: 'vinamilk@vinamilk.com.vn', address: '10 Tân Trào, Tân Phú, Quận 7, TP. Hồ Chí Minh', distance_km: 9.5, latitude: 10.728956, longitude: 106.726359 },
+    { name: 'Công ty TNHH Nước Giải Khát Coca-Cola Việt Nam', contact_person: 'Lê Đình Luân', phone: '02838961000', email: 'cocacola@coca-cola.com.vn', address: 'Xa Lộ Hà Nội, Linh Trung, Thủ Đức, TP. Hồ Chí Minh', distance_km: 21.5, latitude: 10.865916, longitude: 106.784405 },
+    { name: 'Công ty Cổ phần Hàng Tiêu dùng Masan', contact_person: 'Phạm Hoàng Nam', phone: '02862565660', email: 'masan@masan.com.vn', address: '12 Tôn Đức Thắng, Bến Nghé, Quận 1, TP. Hồ Chí Minh', distance_km: 5.8, latitude: 10.776662, longitude: 106.706821 },
+    { name: 'Công ty TNHH Unilever Việt Nam', contact_person: 'Trần Thị Lan', phone: '02854135686', email: 'unilever@unilever.com.vn', address: '156 Nguyễn Lương Bằng, Tân Phú, Quận 7, TP. Hồ Chí Minh', distance_km: 10.2, latitude: 10.723126, longitude: 106.727509 },
+    { name: 'Công ty TNHH Nestlé Việt Nam', contact_person: 'Nguyễn Văn Thành', phone: '02839106600', email: 'nestle@nestle.com.vn', address: 'KCN Biên Hòa 2, Long Bình, Biên Hòa, Đồng Nai', distance_km: 31.2, latitude: 10.929845, longitude: 106.868744 },
+    { name: 'Công ty Cổ phần Acecook Việt Nam', contact_person: 'Trương Công Vinh', phone: '02838154060', email: 'acecook@acecook.com.vn', address: 'Lô II-3 KCN Tân Bình, Tân Phú, TP. Hồ Chí Minh', distance_km: 10.3, latitude: 10.816774, longitude: 106.617821 },
+    { name: 'Công ty Cổ phần Tập đoàn KIDO', contact_person: 'Mai Văn Tuyến', phone: '02838270468', email: 'kido@kido.com.vn', address: '138 - 142 Hai Bà Trưng, Quận 1, TP. Hồ Chí Minh', distance_km: 4.5, latitude: 10.782633, longitude: 106.697472 },
+    { name: 'Công ty TNHH Suntory PepsiCo Việt Nam', contact_person: 'Hoàng Thị Mai', phone: '02838219437', email: 'pepsico@suntorypepsico.vn', address: '88 Đồng Khởi, Bến Nghé, Quận 1, TP. Hồ Chí Minh', distance_km: 5.2, latitude: 10.775318, longitude: 106.703273 },
+    { name: 'Công ty TNHH L\'Oreal Việt Nam', contact_person: 'Bùi Minh Trí', phone: '02839369168', email: 'loreal@loreal.com.vn', address: '72 Lê Thánh Tôn, Bến Nghé, Quận 1, TP. Hồ Chí Minh', distance_km: 5.3, latitude: 10.778007, longitude: 106.702008 },
+    { name: 'Công ty Cổ phần Chăn nuôi C.P. Việt Nam', contact_person: 'Phạm Tiến Dũng', phone: '02513836251', email: 'cpvietnam@cp.com.vn', address: 'KCN Biên Hòa 2, Biên Hòa, Đồng Nai', distance_km: 31.8, latitude: 10.928810, longitude: 106.871230 }
   ];
 
   const suppliers = [];

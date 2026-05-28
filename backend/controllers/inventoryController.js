@@ -32,14 +32,13 @@ exports.getDashboard = async (req, res) => {
         AND ir.status = 'COMPLETED'
     `;
 
-    // monthly exports (SELL COMPLETED)
+    // monthly exports (COMPLETED)
     const monthlyExports = await prisma.$queryRaw`
       SELECT COUNT(DISTINCT receipt_id)::int AS "count", COALESCE(SUM(quantity), 0)::int AS "qty"
       FROM export_details ed
       JOIN export_receipts er ON er.id = ed.receipt_id
       WHERE er.export_date >= ${monthStart}
         AND er.status = 'COMPLETED'
-        AND er.reason = 'SELL'
     `;
 
     const overview = {
@@ -171,11 +170,16 @@ exports.getStats = async (req, res) => {
       const nextDay = new Date(d);
       nextDay.setDate(d.getDate() + 1);
 
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+
       const impRes = await prisma.$queryRaw`
         SELECT COALESCE(SUM(id.quantity), 0)::int as qty
         FROM import_details id
         JOIN import_receipts ir ON ir.id = id.receipt_id
-        WHERE ir.import_date = ${d}
+        WHERE ir.import_date = ${dateStr}::DATE
           AND ir.status = 'COMPLETED'
       `;
 
@@ -183,9 +187,8 @@ exports.getStats = async (req, res) => {
         SELECT COALESCE(SUM(ed.quantity), 0)::int as qty
         FROM export_details ed
         JOIN export_receipts er ON er.id = ed.receipt_id
-        WHERE er.export_date = ${d}
+        WHERE er.export_date = ${dateStr}::DATE
           AND er.status = 'COMPLETED'
-          AND er.reason = 'SELL'
       `;
 
       // Date format like "DD/MM"

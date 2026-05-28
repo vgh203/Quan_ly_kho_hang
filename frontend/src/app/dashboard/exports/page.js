@@ -61,13 +61,19 @@ export default function ExportsPage() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
 
-  // Filters
+  // Input states
   const [search, setSearch]     = useState('');
   const [status, setStatus]     = useState('');
   const [reason, setReason]     = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate]     = useState('');
   const [page, setPage]         = useState(1);
+
+  // Filter states applied to API
+  const [filterSearch, setFilterSearch] = useState('');
+  const [filterFromDate, setFilterFromDate] = useState('');
+  const [filterToDate, setFilterToDate] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Stats
   const [stats, setStats] = useState(null);
@@ -79,11 +85,11 @@ export default function ExportsPage() {
     try {
       const params = new URLSearchParams({
         page, limit: 15,
-        ...(search   && { search }),
-        ...(status   && { status }),
-        ...(reason   && { reason }),
-        ...(fromDate && { from_date: fromDate }),
-        ...(toDate   && { to_date: toDate }),
+        ...(filterSearch   && { search: filterSearch }),
+        ...(status         && { status }),
+        ...(reason         && { reason }),
+        ...(filterFromDate && { from_date: filterFromDate }),
+        ...(filterToDate   && { to_date: filterToDate }),
       });
       const res = await api.get(`/exports?${params}`);
       const data = res.data;
@@ -94,7 +100,7 @@ export default function ExportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, page, search, status, reason, fromDate, toDate]);
+  }, [token, page, filterSearch, status, reason, filterFromDate, filterToDate, refreshKey]);
 
   // ── fetch stats ────────────────────────────────────────────
   const fetchStats = useCallback(async () => {
@@ -106,7 +112,13 @@ export default function ExportsPage() {
 
   useEffect(() => { fetchReceipts(); fetchStats(); }, [fetchReceipts, fetchStats]);
 
-  const applyFilter = () => { setPage(1); fetchReceipts(); };
+  const applyFilter = () => {
+    setFilterSearch(search);
+    setFilterFromDate(fromDate);
+    setFilterToDate(toDate);
+    setPage(1);
+    setRefreshKey(k => k + 1);
+  };
 
   // ── delete ─────────────────────────────────────────────────
   const handleDelete = async (id, code) => {
@@ -222,6 +234,7 @@ export default function ExportsPage() {
           />
         </div>
         <button
+          type="button"
           onClick={applyFilter}
           className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
         >
@@ -230,6 +243,7 @@ export default function ExportsPage() {
         </button>
         {(search || status || reason || fromDate || toDate) && (
           <button
+            type="button"
             onClick={() => { setSearch(''); setStatus(''); setReason(''); setFromDate(''); setToDate(''); setPage(1); }}
             className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >

@@ -55,6 +55,7 @@ export default function ImportsPage() {
   const [filterSearch, setFilterSearch] = useState('');
   const [filterFromDate, setFilterFromDate] = useState('');
   const [filterToDate, setFilterToDate] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   
   const [page, setPage]         = useState(1);
 
@@ -82,7 +83,7 @@ export default function ImportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, page, filterSearch, status, filterFromDate, filterToDate]);
+  }, [token, page, filterSearch, status, filterFromDate, filterToDate, refreshKey]);
 
   // ── fetch stats ────────────────────────────────────────────
   const fetchStats = useCallback(async () => {
@@ -100,6 +101,7 @@ export default function ImportsPage() {
     setFilterFromDate(fromDate);
     setFilterToDate(toDate);
     setPage(1);
+    setRefreshKey(k => k + 1);
   };
 
   // ── delete ─────────────────────────────────────────────────
@@ -232,6 +234,7 @@ export default function ImportsPage() {
           />
         </div>
         <button
+          type="button"
           onClick={applyFilter}
           className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
         >
@@ -240,6 +243,7 @@ export default function ImportsPage() {
         </button>
             {(search || status || fromDate || toDate || filterSearch || filterFromDate || filterToDate) && (
               <button
+                type="button"
                 onClick={() => {
                   setSearch(''); setFromDate(''); setToDate(''); setStatus('');
                   setFilterSearch(''); setFilterFromDate(''); setFilterToDate('');

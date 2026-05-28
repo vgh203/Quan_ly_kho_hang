@@ -27,45 +27,66 @@ body {
 }
 
 @media print {
-  /* Ẩn sidebar, navbar và các nút điều hướng */
-  nav, aside, header, footer,
-  [class*="sidebar"], [class*="navbar"],
+  /* 1. Ẩn sidebar, navbar, và các phần tử không cần in */
+  aside,
   .no-print {
     display: none !important;
   }
 
-  /* Reset màu nền và màu chữ về đen trắng cho in ấn */
+  /* 2. Reset overflow để nội dung không bị cắt khi in */
+  html, body, main,
+  div {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  /* 3. Bỏ flex layout trên body wrapper để in đúng */
   body {
     background: white !important;
     color: black !important;
     font-size: 12pt;
+    display: block !important;
   }
 
-  /* Xoá background màu tối (dark mode) khi in */
-  * {
-    background-color: transparent !important;
+  /* 4. Nội dung chính chiếm toàn trang */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  /* 5. Reset dark mode backgrounds */
+  .dark, [class*="dark:bg-"] {
+    background-color: white !important;
+  }
+
+  /* 6. Chữ đen, bỏ shadow */
+  p, span, td, th, h1, h2, h3, h4, h5, h6, label, li, a, div {
     color: black !important;
     box-shadow: none !important;
     text-shadow: none !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 
-  /* Giữ màu sắc của border */
-  [class*="border"] {
-    border-color: #ccc !important;
-  }
-
-  /* Đảm bảo bảng hiển thị đầy đủ */
+  /* 7. Bảng in rõ ràng */
   table { border-collapse: collapse; width: 100%; }
-  th, td { border: 1px solid #ccc; padding: 6px 8px; }
-
-  /* Tránh ngắt trang trong dòng bảng */
+  th, td { border: 1px solid #999; padding: 6px 8px; color: black !important; }
   tr { page-break-inside: avoid; }
 
-  /* Link không cần gạch chân khi in */
-  a { text-decoration: none; }
+  /* 8. Border cho card */
+  [class*="rounded-xl"],
+  [class*="rounded-lg"] {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
 
-  /* Utility class ẩn khi in */
-  .no-print { display: none !important; }
+  /* 9. Hiện phần print-only */
+  .hidden.print\\:block {
+    display: block !important;
+  }
+
+  /* 10. Link bỏ gạch chân */
+  a { text-decoration: none; }
 }
+

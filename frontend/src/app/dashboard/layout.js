@@ -202,7 +202,7 @@ export default function DashboardLayout({ children }) {
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Navbar Header */}
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-900 bg-white/80 dark:bg-slate-950/60 backdrop-blur-md px-6 shrink-0 print:hidden">
+        <header className="flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-900 bg-white/80 dark:bg-slate-950/60 backdrop-blur-md px-6 shrink-0 no-print">
           <button
             onClick={() => setIsSidebarOpen(true)}
             className="rounded-lg p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white md:hidden"

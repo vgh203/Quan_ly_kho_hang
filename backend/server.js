@@ -36,11 +36,19 @@ const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const locationRoutes = require('./routes/locationRoutes');
 const supplierRoutes = require('./routes/supplierRoutes');
+const userRoutes = require('./routes/userRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
+const importRoutes = require('./routes/importRoutes');
+const exportRoutes = require('./routes/exportRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/suppliers', supplierRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/imports', importRoutes);
+app.use('/api/exports', exportRoutes);
 
 // Root route
 app.get('/', (req, res) => {

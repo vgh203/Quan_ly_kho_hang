@@ -79,6 +79,14 @@ export default function DashboardLayout({ children }) {
     },
   ];
 
+  if (user?.role === 'admin') {
+    menuItems.push({
+      name: 'Phân quyền người dùng',
+      href: '/dashboard/users',
+      icon: UserCheck,
+    });
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
       

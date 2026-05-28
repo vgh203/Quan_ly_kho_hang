@@ -8,7 +8,8 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { 
   Plus, Search, QrCode, Edit2, Trash2, Printer, 
-  X, AlertCircle, Check, Loader2, Sparkles, Filter 
+  X, AlertCircle, Check, Loader2, Sparkles, Filter,
+  LayoutGrid, Package
 } from 'lucide-react';
 
 // Zod validation schema for Product creation/updating
@@ -38,6 +39,7 @@ export default function ProductsPage() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [activeTab, setActiveTab] = useState('products');
   
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -311,14 +313,14 @@ export default function ProductsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-            Danh mục Sản phẩm
+            Danh mục Sản phẩm &amp; Kệ hàng
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Quản lý thông tin hàng hóa, kệ lưu trữ mặc định và nhà cung cấp.
+            Quản lý thông tin hàng hóa, sơ đồ kệ kho lưu trữ và nhà cung cấp liên kết.
           </p>
         </div>
         
-        {isAdmin && (
+        {isAdmin && activeTab === 'products' && (
           <button
             onClick={handleAddClick}
             className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-700 active:scale-[0.98] transition-all cursor-pointer"
@@ -329,125 +331,338 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* Search & Filter Toolbar */}
-      <div className="flex flex-col gap-4 rounded-xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/30 p-4 backdrop-blur-md sm:flex-row sm:items-center">
-        {/* Search */}
-        <div className="relative flex-1">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 dark:text-slate-500">
-            <Search className="h-4 w-4" />
-          </span>
-          <input
-            type="text"
-            placeholder="Tìm theo tên sản phẩm hoặc mã hàng..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2 pr-3 pl-10 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-650 focus:border-indigo-500/80 focus:outline-none"
-          />
-        </div>
-        
-        {/* Category Filter */}
-        <div className="relative w-full sm:w-60">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 dark:text-slate-500">
-            <Filter className="h-4 w-4" />
-          </span>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2 pr-8 pl-10 text-sm text-slate-700 dark:text-slate-300 focus:border-indigo-500/80 focus:outline-none appearance-none"
-          >
-            <option value="">Tất cả danh mục ({categories.length})</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
+      {/* Tab Switcher */}
+      <div className="flex gap-4 border-b border-slate-200/60 dark:border-slate-800/80 pb-px">
+        <button
+          onClick={() => setActiveTab('products')}
+          className={`flex items-center gap-2 border-b-2 pb-2.5 text-sm font-semibold transition-all cursor-pointer ${
+            activeTab === 'products'
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-750 dark:hover:text-slate-350'
+          }`}
+        >
+          <Package className="h-4.5 w-4.5" />
+          Sản phẩm ({products.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('locations')}
+          className={`flex items-center gap-2 border-b-2 pb-2.5 text-sm font-semibold transition-all cursor-pointer ${
+            activeTab === 'locations'
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-750 dark:hover:text-slate-350'
+          }`}
+        >
+          <LayoutGrid className="h-4.5 w-4.5" />
+          Kệ hàng ({locations.length})
+        </button>
       </div>
 
-      {/* Main Table Content */}
-      {loading ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600 dark:text-indigo-400" />
-          <p className="text-sm text-slate-500 dark:text-slate-400">Đang tải danh sách hàng hóa...</p>
-        </div>
-      ) : filteredProducts.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-250 dark:border-slate-800 bg-white dark:bg-slate-900/10 p-8 text-center">
-          <AlertCircle className="h-8 w-8 text-slate-400" />
-          <p className="text-sm text-slate-550 dark:text-slate-400">Không tìm thấy sản phẩm nào phù hợp.</p>
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/20 backdrop-blur-md">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm text-slate-600 dark:text-slate-300">
-              <thead className="bg-slate-50 dark:bg-slate-950/60 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/60 dark:border-slate-800">
-                <tr>
-                  <th className="py-3.5 px-4">Mã hàng</th>
-                  <th className="py-3.5 px-4">Tên sản phẩm</th>
-                  <th className="py-3.5 px-4">Phân mục</th>
-                  <th className="py-3.5 px-4">Đơn vị</th>
-                  <th className="py-3.5 px-4">Giá bán lẻ</th>
-                  <th className="py-3.5 px-4">Vị trí kệ</th>
-                  <th className="py-3.5 px-4 text-center">Tồn kho</th>
-                  <th className="py-3.5 px-4 text-center">Hành động</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200/60 dark:divide-slate-800/60">
-                {filteredProducts.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-medium text-indigo-600 dark:text-indigo-400">{p.product_code}</td>
-                    <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-slate-100 max-w-xs truncate" title={p.name}>
-                      {p.name}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-500 dark:text-slate-450">{p.category || '—'}</td>
-                    <td className="py-3.5 px-4 text-slate-500 dark:text-slate-455">{p.unit || '—'}</td>
-                    <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-200">
-                      {p.unit_price ? `${Number(p.unit_price).toLocaleString()} đ` : '—'}
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-xs text-blue-600 dark:text-blue-400">{p.location_code || 'Chưa xếp kệ'}</td>
-                    <td className="py-3.5 px-4 text-center">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                        p.is_low_stock 
-                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' 
-                          : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                      }`}>
-                        {p.current_stock}
-                        {p.is_low_stock && ' (Hụt)'}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => handleQrClick(p)}
-                          title="Xem mã QR"
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white transition-colors"
-                        >
-                          <QrCode className="h-4.5 w-4.5" />
-                        </button>
-                        
-                        {isAdmin && (
-                          <>
+      {activeTab === 'products' && (
+        <>
+          {/* Search & Filter Toolbar */}
+          <div className="flex flex-col gap-4 rounded-xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/30 p-4 backdrop-blur-md sm:flex-row sm:items-center">
+            {/* Search */}
+            <div className="relative flex-1">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 dark:text-slate-500">
+                <Search className="h-4 w-4" />
+              </span>
+              <input
+                type="text"
+                placeholder="Tìm theo tên sản phẩm hoặc mã hàng..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2 pr-3 pl-10 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-650 focus:border-indigo-500/80 focus:outline-none"
+              />
+            </div>
+            
+            {/* Category Filter */}
+            <div className="relative w-full sm:w-60">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 dark:text-slate-500">
+                <Filter className="h-4 w-4" />
+              </span>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-2 pr-8 pl-10 text-sm text-slate-700 dark:text-slate-300 focus:border-indigo-500/80 focus:outline-none appearance-none"
+              >
+                <option value="">Tất cả danh mục ({categories.length})</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Main Table Content */}
+          {loading ? (
+            <div className="flex h-64 flex-col items-center justify-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-600 dark:text-indigo-400" />
+              <p className="text-sm text-slate-500 dark:text-slate-400">Đang tải danh sách hàng hóa...</p>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-250 dark:border-slate-800 bg-white dark:bg-slate-900/10 p-8 text-center">
+              <AlertCircle className="h-8 w-8 text-slate-400" />
+              <p className="text-sm text-slate-550 dark:text-slate-400">Không tìm thấy sản phẩm nào phù hợp.</p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/20 backdrop-blur-md">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-sm text-slate-600 dark:text-slate-300">
+                  <thead className="bg-slate-50 dark:bg-slate-950/60 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/60 dark:border-slate-800">
+                    <tr>
+                      <th className="py-3.5 px-4">Mã hàng</th>
+                      <th className="py-3.5 px-4">Tên sản phẩm</th>
+                      <th className="py-3.5 px-4">Phân mục</th>
+                      <th className="py-3.5 px-4">Đơn vị</th>
+                      <th className="py-3.5 px-4">Giá bán lẻ</th>
+                      <th className="py-3.5 px-4">Vị trí kệ</th>
+                      <th className="py-3.5 px-4 text-center">Tồn kho</th>
+                      <th className="py-3.5 px-4 text-center">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200/60 dark:divide-slate-800/60">
+                    {filteredProducts.map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors">
+                        <td className="py-3.5 px-4 font-mono font-medium text-indigo-600 dark:text-indigo-400">{p.product_code}</td>
+                        <td className="py-3.5 px-4 font-medium text-slate-900 dark:text-slate-100 max-w-xs truncate" title={p.name}>
+                          {p.name}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-500 dark:text-slate-450">{p.category || '—'}</td>
+                        <td className="py-3.5 px-4 text-slate-500 dark:text-slate-455">{p.unit || '—'}</td>
+                        <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-200">
+                          {p.unit_price ? `${Number(p.unit_price).toLocaleString()} đ` : '—'}
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-xs text-blue-600 dark:text-blue-400">{p.location_code || 'Chưa xếp kệ'}</td>
+                        <td className="py-3.5 px-4 text-center">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            p.is_low_stock 
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' 
+                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          }`}>
+                            {p.current_stock}
+                            {p.is_low_stock && ' (Hụt)'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <button
-                              onClick={() => handleEditClick(p)}
-                              title="Chỉnh sửa"
-                              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              onClick={() => handleQrClick(p)}
+                              title="Xem mã QR"
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white transition-colors"
                             >
-                              <Edit2 className="h-4.5 w-4.5" />
+                              <QrCode className="h-4.5 w-4.5" />
                             </button>
-                            <button
-                              onClick={() => handleDeleteClick(p.id, p.name)}
-                              title="Xóa"
-                              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                            >
-                              <Trash2 className="h-4.5 w-4.5" />
-                            </button>
-                          </>
+                            
+                            {isAdmin && (
+                              <>
+                                <button
+                                  onClick={() => handleEditClick(p)}
+                                  title="Chỉnh sửa"
+                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                >
+                                  <Edit2 className="h-4.5 w-4.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClick(p.id, p.name)}
+                                  title="Xóa"
+                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                >
+                                  <Trash2 className="h-4.5 w-4.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'locations' && (
+        <div className="space-y-6">
+          {/* Summary cards */}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/20 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-450 dark:text-slate-500">Tổng số kệ hàng</p>
+              <p className="mt-2 text-3xl font-bold text-slate-800 dark:text-white">{locations.length}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/20 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-450 dark:text-slate-500">Tổng sức chứa</p>
+              <p className="mt-2 text-3xl font-bold text-indigo-650 dark:text-indigo-400">
+                {locations.reduce((s, l) => s + (l.max_capacity || 0), 0).toLocaleString()}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/20 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-450 dark:text-slate-500">Tổng trống khả dụng</p>
+              <p className="mt-2 text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                {(locations.reduce((s, l) => s + (l.max_capacity || 0), 0) - locations.reduce((s, l) => s + (l.current_occupied || 0), 0)).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* 5 Zones Visual Warehouse Map */}
+          {locations.length === 0 ? (
+            <div className="rounded-2xl border border-slate-250 dark:border-slate-800 bg-white dark:bg-slate-900/10 p-10 text-center text-slate-400 dark:text-slate-500">
+              Chưa có kệ hàng nào được cấu hình trong hệ thống.
+            </div>
+          ) : (() => {
+            const predefinedZones = [
+              {
+                name: "Thực phẩm tươi sống",
+                color: "emerald",
+                icon: (props) => (
+                  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c-1.2 0-2.4.3-3.5 1-2 1.2-3.5 3.3-3.5 5.7c0 4.3 4.2 7.7 7 8.3c2.8-.6 7-4 7-8.3c0-2.4-1.5-4.5-3.5-5.7C14.4 3.3 13.2 3 12 3z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 5c0 1 1 2 2.5 2s2.5-1 2.5-2" />
+                  </svg>
+                ),
+                desc: "Khu vực bảo quản thịt, cá, rau củ quả tươi sống hàng ngày."
+              },
+              {
+                name: "Thực phẩm khô và Nhu yếu phẩm",
+                color: "amber",
+                icon: (props) => (
+                  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 10a9 9 0 0018 0M6 10v2a6 6 0 0012 0v-2M12 10V4M10 6.5h4" />
+                  </svg>
+                ),
+                desc: "Mì ăn liền, gia vị, dầu ăn, gạo và các nhu yếu phẩm đóng chai/gói."
+              },
+              {
+                name: "Đồ uống và bánh kẹo",
+                color: "indigo",
+                icon: (props) => (
+                  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <rect x="5" y="4" width="6" height="15" rx="1.5" />
+                    <path d="M8 4V2M5 8h6M15 11l4-4M19 11l-4-4M15 7l4 4M19 7l-4 4" />
+                  </svg>
+                ),
+                desc: "Nước ngọt, bia, sữa, các loại bánh kẹo ngọt và đồ ăn vặt."
+              },
+              {
+                name: "Hóa mỹ phẩm",
+                color: "rose",
+                icon: (props) => (
+                  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 22h6V10H9v12zM9 10l3-5 3 5M12 2v3M9 8h6" />
+                  </svg>
+                ),
+                desc: "Dầu gội, bột giặt, nước rửa chén, kem đánh răng và mỹ phẩm chăm sóc."
+              },
+              {
+                name: "Đồ dùng gia đình",
+                color: "sky",
+                icon: (props) => (
+                  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3M9 21V13h6v8" />
+                  </svg>
+                ),
+                desc: "Chén bát, chổi, khăn lau, hộp đựng thực phẩm và đồ gia dụng nhỏ."
+              }
+            ];
+
+            return (
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                {predefinedZones.map((zone) => {
+                  const zoneLocs = locations.filter((loc) => loc.zone === zone.name);
+
+                  const colors = {
+                    emerald: { text: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-100 dark:border-emerald-900/50', badge: 'bg-emerald-100 text-emerald-800', bar: 'bg-emerald-500', shadow: 'shadow-emerald-100/50' },
+                    amber: { text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-955/20', border: 'border-amber-100 dark:border-amber-900/50', badge: 'bg-amber-100 text-amber-800', bar: 'bg-amber-500', shadow: 'shadow-amber-100/50' },
+                    indigo: { text: 'text-indigo-700 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/20', border: 'border-indigo-100 dark:border-indigo-900/50', badge: 'bg-indigo-100 text-indigo-800', bar: 'bg-indigo-500', shadow: 'shadow-indigo-100/50' },
+                    rose: { text: 'text-rose-700 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20', border: 'border-rose-100 dark:border-rose-900/50', badge: 'bg-rose-100 text-rose-800', bar: 'bg-rose-500', shadow: 'shadow-rose-100/50' },
+                    sky: { text: 'text-sky-700 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/20', border: 'border-sky-100 dark:border-sky-900/50', badge: 'bg-sky-100 text-sky-800', bar: 'bg-sky-500', shadow: 'shadow-sky-100/50' }
+                  }[zone.color];
+
+                  return (
+                    <div key={zone.name} className={`rounded-2xl border ${colors.border} bg-white dark:bg-slate-900/20 p-5 shadow-sm space-y-4 hover:shadow-md transition duration-200`}>
+                      {/* Zone Header */}
+                      <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <div className={`p-2.5 rounded-xl ${colors.bg} ${colors.text}`}>
+                          <zone.icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-slate-800 dark:text-white text-sm">{zone.name}</h3>
+                          <p className="text-[11px] text-slate-450 dark:text-slate-500 leading-tight">{zone.desc}</p>
+                        </div>
+                      </div>
+
+                      {/* Shelves Layout inside Zone */}
+                      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                        {zoneLocs.length === 0 ? (
+                          <div className="col-span-2 rounded-xl bg-slate-50 dark:bg-slate-950/30 py-6 text-center text-xs text-slate-400 dark:text-slate-500 italic">
+                            Chưa có kệ hàng ở phân khu này
+                          </div>
+                        ) : (
+                          zoneLocs.map((loc) => {
+                            const pct = loc.max_capacity > 0
+                              ? Math.min(100, Math.round((loc.current_occupied / loc.max_capacity) * 100))
+                              : 0;
+                            const barColor =
+                              pct >= 90 ? 'bg-red-500'
+                                : pct >= 70 ? 'bg-amber-500'
+                                  : 'bg-indigo-600 dark:bg-indigo-500';
+                            const statusLabel =
+                              pct >= 100 ? { text: 'Đầy', cls: 'bg-red-500/10 text-red-650 dark:text-red-400 border border-red-500/20' }
+                                : pct >= 70 ? { text: 'Gần đầy', cls: 'bg-amber-500/10 text-amber-650 dark:text-amber-400 border border-amber-500/20' }
+                                  : { text: 'Còn trống', cls: 'bg-emerald-500/10 text-emerald-650 dark:text-emerald-400 border border-emerald-500/20' };
+
+                            return (
+                              <div key={loc.id} className="rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-55/30 dark:bg-slate-950/10 p-3.5 space-y-3">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <p className="font-bold text-slate-700 dark:text-slate-200 text-xs">{loc.name}</p>
+                                    <p className="text-[9px] font-mono text-slate-450 dark:text-slate-500 uppercase tracking-wide mt-0.5">{loc.location_code}</p>
+                                  </div>
+                                  <span className={`rounded px-1.5 py-0.5 text-[8.5px] font-bold ${statusLabel.cls}`}>
+                                    {statusLabel.text}
+                                  </span>
+                                </div>
+
+                                {/* Progress bar */}
+                                <div className="space-y-1">
+                                  <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                                    <span>Đã xếp: <strong className="text-slate-700 dark:text-slate-300">{loc.current_occupied.toLocaleString()}</strong></span>
+                                    <span><strong className="text-slate-700 dark:text-slate-300">{pct}%</strong></span>
+                                  </div>
+                                  <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+                                    <div
+                                      className={`h-1.5 rounded-full transition-all duration-300 ${barColor}`}
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Stats Info */}
+                                <div className="grid grid-cols-2 gap-2 text-center text-[10px] pt-1">
+                                  <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2">
+                                    <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wide">Tối đa</p>
+                                    <p className="mt-0.5 font-bold text-slate-700 dark:text-slate-300">{loc.max_capacity.toLocaleString()}</p>
+                                  </div>
+                                  <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2">
+                                    <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wide">Còn trống</p>
+                                    <p className="mt-0.5 font-bold text-emerald-600 dark:text-emerald-400">
+                                      {Math.max(0, loc.max_capacity - loc.current_occupied).toLocaleString()}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })
                         )}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       )}
 

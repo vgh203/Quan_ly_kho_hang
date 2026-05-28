@@ -27,22 +27,45 @@ body {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  .print-content, .print-content * {
-    visibility: visible;
-  }
-  .print-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    box-shadow: none !important;
-  }
+  /* Ẩn sidebar, navbar và các nút điều hướng */
+  nav, aside, header, footer,
+  [class*="sidebar"], [class*="navbar"],
   .no-print {
     display: none !important;
   }
+
+  /* Reset màu nền và màu chữ về đen trắng cho in ấn */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  /* Xoá background màu tối (dark mode) khi in */
+  * {
+    background-color: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Giữ màu sắc của border */
+  [class*="border"] {
+    border-color: #ccc !important;
+  }
+
+  /* Đảm bảo bảng hiển thị đầy đủ */
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ccc; padding: 6px 8px; }
+
+  /* Tránh ngắt trang trong dòng bảng */
+  tr { page-break-inside: avoid; }
+
+  /* Link không cần gạch chân khi in */
+  a { text-decoration: none; }
+
+  /* Utility class ẩn khi in */
+  .no-print { display: none !important; }
 }

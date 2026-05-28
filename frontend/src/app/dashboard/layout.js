@@ -114,7 +114,7 @@ export default function DashboardLayout({ children }) {
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
       
       {/* Sidebar - Desktop Layout */}
-      <aside className="hidden w-64 border-r border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950/80 backdrop-blur-xl p-6 md:flex md:flex-col justify-between shrink-0">
+      <aside className="hidden w-64 border-r border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950/80 backdrop-blur-xl p-6 md:flex md:flex-col justify-between shrink-0 print:hidden">
         <div className="space-y-6">
           {/* Logo Brand */}
           <div className="flex items-center gap-2.5 px-2">
@@ -155,7 +155,7 @@ export default function DashboardLayout({ children }) {
 
       {/* Sidebar - Mobile Layout */}
       {isSidebarOpen && (
-        <div className="fixed inset-0 z-40 flex md:hidden bg-slate-950/40 dark:bg-slate-950/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-40 flex md:hidden bg-slate-950/40 dark:bg-slate-950/80 backdrop-blur-sm print:hidden">
           <aside className="w-64 border-r border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950 p-6 flex flex-col justify-between animate-slide-in text-slate-900 dark:text-slate-100">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -202,7 +202,7 @@ export default function DashboardLayout({ children }) {
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Navbar Header */}
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-900 bg-white/80 dark:bg-slate-950/60 backdrop-blur-md px-6 shrink-0">
+        <header className="flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-900 bg-white/80 dark:bg-slate-950/60 backdrop-blur-md px-6 shrink-0 print:hidden">
           <button
             onClick={() => setIsSidebarOpen(true)}
             className="rounded-lg p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white md:hidden"

@@ -48,6 +48,11 @@ export default function DashboardLayout({ children }) {
       href: '/dashboard/products',
       icon: Package,
     },
+    {
+      name: 'Nhà cung cấp & Bản đồ',
+      href: '/dashboard/suppliers',
+      icon: MapPin,
+    },
   ];
 
   return (

@@ -12,6 +12,7 @@ export const useAuthStore = create((set, get) => ({
     set({ accessToken: token });
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', token);
+      document.cookie = `accessToken=${token}; path=/; max-age=900; SameSite=Lax`;
     }
   },
 
@@ -34,6 +35,7 @@ export const useAuthStore = create((set, get) => ({
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
+        document.cookie = `accessToken=${accessToken}; path=/; max-age=900; SameSite=Lax`;
       }
 
       set({
@@ -59,6 +61,7 @@ export const useAuthStore = create((set, get) => ({
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      document.cookie = 'accessToken=; path=/; max-age=0; SameSite=Lax';
     }
     set({
       user: null,

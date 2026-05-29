@@ -12,13 +12,12 @@ export default function AuthProvider({ children }) {
     setMounted(true);
   }, [initialize]);
 
-  // Prevent flash of unstyled content or hydration mismatch
   if (!mounted) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-slate-100">
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-100 text-slate-700">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
-          <p className="text-sm font-medium tracking-wide text-slate-400">Đang tải cấu hình...</p>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
+          <p className="text-sm font-medium tracking-wide text-slate-500">Đang tải cấu hình...</p>
         </div>
       </div>
     );

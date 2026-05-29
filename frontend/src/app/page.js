@@ -10,19 +10,15 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoading) {
-      if (isAuthenticated) {
-        router.push('/dashboard');
-      } else {
-        router.push('/login');
-      }
+      router.push(isAuthenticated ? '/dashboard' : '/login');
     }
   }, [isAuthenticated, isLoading, router]);
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-slate-950 text-slate-100">
+    <div className="flex h-screen w-screen items-center justify-center bg-slate-100 text-slate-700">
       <div className="flex flex-col items-center gap-3">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
-        <p className="text-sm font-medium tracking-wide text-slate-400">Đang chuyển hướng...</p>
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
+        <p className="text-sm font-medium tracking-wide text-slate-500">Đang chuyển hướng...</p>
       </div>
     </div>
   );

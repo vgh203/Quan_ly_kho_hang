@@ -14,7 +14,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 
-const COLORS = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
+const COLORS = ['#06b6d4', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
 
 export default function DashboardPage() {
   const { user, logout } = useAuthStore();
@@ -216,7 +216,7 @@ export default function DashboardPage() {
                     cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
                   />
                   <Legend iconType="circle" wrapperStyle={{ paddingTop: '15px', fontSize: 12 }} />
-                  <Bar name="Nhập kho" dataKey="import" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                  <Bar name="Nhập kho" dataKey="import" fill="#06b6d4" radius={[4, 4, 0, 0]} />
                   <Bar name="Xuất kho" dataKey="export" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

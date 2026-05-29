@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
   });
 
   supplierIcon = createIcon('red');
-  selectedIcon = createIcon('indigo');
+  selectedIcon = createIcon('blue');
 
   // Custom Warehouse SVG Icon
   warehouseIcon = L.divIcon({
@@ -47,7 +47,7 @@ if (typeof window !== 'undefined') {
         width: 36px;
         height: 36px;
         border-radius: 50%;
-        background-color: #4f46e5;
+        background-color: #06b6d4;
         color: #ffffff;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.08);
         border: 2px solid #ffffff;
@@ -246,7 +246,7 @@ export default function SupplierMap({
         {activeRoute.length > 0 && (
           <Polyline 
             positions={activeRoute} 
-            color="#4f46e5" 
+            color="#06b6d4" 
             weight={4}
             opacity={0.8}
             dashArray="1, 8"

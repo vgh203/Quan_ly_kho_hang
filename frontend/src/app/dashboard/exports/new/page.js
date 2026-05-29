@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDialogStore } from '@/store/useDialogStore';
+import QRScannerModal from '@/components/QRScannerModal';
 import {
   AlertCircle,
   AlertTriangle,
@@ -14,6 +15,7 @@ import {
   Save,
   Trash2,
   X,
+  QrCode,
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -108,6 +110,72 @@ export default function NewExportPage() {
   const selectableProducts = reason === 'RETURN' ? returnableProducts : products;
 
   const resetItems = () => setItems([blankItem()]);
+
+  const handleQrScanSuccess = async (scannedCode) => {
+    setIsQrOpen(false);
+
+    let extractedCode = scannedCode;
+    try {
+      const parsed = JSON.parse(scannedCode);
+      if (parsed && parsed.product_code) {
+        extractedCode = parsed.product_code;
+      }
+    } catch (e) {
+      // Not JSON, use raw text
+    }
+
+    const searchCode = String(extractedCode).trim().toLowerCase();
+    const product = selectableProducts.find((p) => String(p.product_code || '').trim().toLowerCase() === searchCode);
+
+    if (!product) {
+      if (reason === 'RETURN' && supplierId) {
+        showAlert('Cảnh báo', `Sản phẩm quét được không thuộc NCC này.`);
+      } else {
+        const isJson = extractedCode !== scannedCode ? '(Đã bóc tách từ JSON)' : '(Mã quét thô)';
+        showAlert('Lỗi', `Quét được mã: [${extractedCode}] ${isJson}. Nhưng mã này không có trong Hệ thống! (Chỉ chấp nhận các mã như BK001, BK002...)`);
+      }
+      return;
+    }
+
+    let lots = [];
+    try {
+      const lotRes = await api.get(`/inventory/lots/${product.id}`);
+      lots = (lotRes.data?.lots || []).filter((lot) => {
+        const available = Number(lot.available_lot_stock ?? lot.current_lot_stock ?? 0);
+        if (available <= 0) return false;
+        if (reason === 'RETURN') return String(lot.supplier_id) === String(supplierId);
+        const remainingDays = daysUntil(lot.expiry_date);
+        return lot.expiry_date == null || remainingDays >= Number(product.min_days_to_sell || 7);
+      });
+    } catch (err) {
+      showAlert('Lỗi', 'Không thể tải danh sách lô hàng.');
+      return;
+    }
+
+    const price = reason === 'RETURN' ? 0 : Number(product.unit_price || 0);
+    const newItem = {
+      _key: Math.random(),
+      productId: String(product.id),
+      productName: product.name,
+      productCode: product.product_code,
+      unit: product.unit || '',
+      quantity: '1',
+      sellingPrice: price ? String(price) : '',
+      totalAmount: price,
+      importDetailId: '',
+      lots,
+      showLots: true,
+    };
+
+    setItems((prev) => {
+      if (prev.length === 1 && !prev[0].productId) {
+        return [newItem];
+      }
+      return [...prev, newItem];
+    });
+
+    showAlert('Thành công', `Đã quét thêm sản phẩm: ${product.name}`);
+  };
 
   const handleReasonChange = (value) => {
     setReason(value);
@@ -429,10 +497,16 @@ export default function NewExportPage() {
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {reason === 'SELL' ? 'Chi tiết sản phẩm xuất bán' : 'Chi tiết sản phẩm trả NCC'}
             </h2>
-            <button type="button" onClick={addRow} className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-cyan-600">
-              <Plus className="h-4 w-4" />
-              Thêm sản phẩm
-            </button>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setIsQrOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600">
+                <QrCode className="h-4 w-4" />
+                Quét mã QR
+              </button>
+              <button type="button" onClick={addRow} className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-cyan-600">
+                <Plus className="h-4 w-4" />
+                Thêm sản phẩm
+              </button>
+            </div>
           </div>
 
           <div className="space-y-5">
@@ -699,6 +773,11 @@ export default function NewExportPage() {
           </div>
         </div>
       )}
+      <QRScannerModal 
+        isOpen={isQrOpen} 
+        onClose={() => setIsQrOpen(false)} 
+        onScanSuccess={handleQrScanSuccess} 
+      />
     </div>
   );
 }

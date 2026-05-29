@@ -14,7 +14,7 @@ import {
 import api from '@/lib/api';
 // ─── Configs ──────────────────────────────────────────────────
 const STATUS_MAP = {
-  PENDING_APPROVAL: { label: 'Chờ duyệt', color: 'bg-purple-500/15 text-purple-400 border-purple-500/30', icon: Clock },
+  PENDING_APPROVAL: { label: 'Chờ duyệt', color: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30', icon: Clock },
   COMPLETED:        { label: 'Hoàn tất',  color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', icon: CheckCircle2 },
   CANCELLED:        { label: 'Đã huỷ',    color: 'bg-red-500/15 text-red-400 border-red-500/30',       icon: XCircle },
 };

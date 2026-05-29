@@ -58,6 +58,8 @@ export default function SuppliersPage() {
   // View Detail Modal State
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailSupplier, setDetailSupplier] = useState(null);
+  const [detailProducts, setDetailProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   
   // Temp coordinates for map selection during Add/Edit
   const [tempLat, setTempLat] = useState(10.762622);
@@ -211,9 +213,19 @@ export default function SuppliersPage() {
   };
 
   // View Details Modal open
-  const handleDetailClick = (supplier) => {
+  const handleDetailClick = async (supplier) => {
     setDetailSupplier(supplier);
     setIsDetailOpen(true);
+    setLoadingProducts(true);
+    try {
+      const res = await api.get(`/products?supplier_id=${supplier.id}`);
+      setDetailProducts(res.data);
+    } catch (error) {
+      console.error('Failed to load supplier products', error);
+      setDetailProducts([]);
+    } finally {
+      setLoadingProducts(false);
+    }
   };
 
   // Callback when user clicks on map during select mode
@@ -513,11 +525,44 @@ export default function SuppliersPage() {
               </div>
             </div>
 
+            <div className="mt-6 border-t border-slate-100 dark:border-slate-800 pt-4">
+              <h4 className="text-sm font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                <Warehouse className="h-4 w-4 text-indigo-500" />
+                Sản phẩm cung cấp
+              </h4>
+              
+              {loadingProducts ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
+                </div>
+              ) : detailProducts.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center py-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                  Nhà cung cấp này chưa cung cấp sản phẩm nào.
+                </p>
+              ) : (
+                <div className="max-h-40 overflow-y-auto pr-1 space-y-2 scrollbar-thin">
+                  {detailProducts.map(prod => (
+                    <div key={prod.id} className="flex justify-between items-center p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{prod.name}</span>
+                        <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400">{prod.product_code}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(prod.unit_price)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
                 onClick={() => setIsDetailOpen(false)}
-                className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-5 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-5 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors cursor-pointer"
               >
                 Đóng lại
               </button>

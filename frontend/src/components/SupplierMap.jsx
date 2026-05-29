@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
   });
 
   supplierIcon = createIcon('red');
-  selectedIcon = createIcon('violet');
+  selectedIcon = createIcon('indigo');
 
   // Custom Warehouse SVG Icon
   warehouseIcon = L.divIcon({

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { 
   LayoutDashboard, Package, LogOut, Menu, X, Sun, Moon,
   User, Shield, UserCheck, Warehouse, MapPin, ClipboardList, TrendingUp, ChevronDown,
-  ArrowDownToLine, ArrowUpFromLine
+  ArrowDownToLine, ArrowUpFromLine, Bell
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }) {
@@ -17,6 +17,7 @@ export default function DashboardLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [alertCount, setAlertCount] = useState(0);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -39,6 +40,24 @@ export default function DashboardLayout({ children }) {
       document.documentElement.classList.remove('dark');
     }
   }, []);
+
+  // Fetch alert count
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchAlerts = async () => {
+        try {
+          const { default: api } = await import('@/lib/api');
+          const res = await api.get('/inventory/alerts');
+          const summary = res.data.summary || {};
+          const totalAlerts = (summary.low_stock_count || 0) + (summary.expired_count || 0);
+          setAlertCount(totalAlerts);
+        } catch (e) {
+          console.error('Failed to fetch alerts:', e);
+        }
+      };
+      fetchAlerts();
+    }
+  }, [isAuthenticated]);
 
   // Theme toggler
   const toggleTheme = () => {
@@ -220,6 +239,20 @@ export default function DashboardLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Alert Bell */}
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="relative rounded-lg p-1.5 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+              title="Cảnh báo kho"
+            >
+              <Bell className="h-5 w-5" />
+              {alertCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-950 animate-pulse">
+                  {alertCount > 9 ? '9+' : alertCount}
+                </span>
+              )}
+            </button>
+
             {/* Theme Toggle Switch */}
             <button
               onClick={toggleTheme}

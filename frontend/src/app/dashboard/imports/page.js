@@ -16,7 +16,7 @@ import api from '@/lib/api';
 const STATUS_MAP = {
   IN_TRANSIT:  { label: 'Đang vận chuyển', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',    icon: Truck },
   ARRIVED:     { label: 'Đã về kho',        color: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: Package },
-  INSPECTING:  { label: 'Đang kiểm tra',    color: 'bg-purple-500/15 text-purple-400 border-purple-500/30', icon: Clock },
+  INSPECTING:  { label: 'Đang kiểm tra',    color: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30', icon: Clock },
   COMPLETED:   { label: 'Hoàn tất',         color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', icon: CheckCircle2 },
   CANCELLED:   { label: 'Đã huỷ',           color: 'bg-red-500/15 text-red-400 border-red-500/30',       icon: XCircle },
 };

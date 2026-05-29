@@ -16,7 +16,7 @@ import api from '@/lib/api';
 const STATUS_MAP = {
   IN_TRANSIT:  { label: 'Đang vận chuyển', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',     icon: Truck,        step: 1 },
   ARRIVED:     { label: 'Đã về kho',        color: 'bg-amber-500/15 text-amber-400 border-amber-500/30',  icon: Package,      step: 2 },
-  INSPECTING:  { label: 'Đang kiểm tra',    color: 'bg-purple-500/15 text-purple-400 border-purple-500/30', icon: Clock,      step: 3 },
+  INSPECTING:  { label: 'Đang kiểm tra',    color: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30', icon: Clock,      step: 3 },
   COMPLETED:   { label: 'Hoàn tất',         color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', icon: CheckCircle2, step: 4 },
   CANCELLED:   { label: 'Đã huỷ',           color: 'bg-red-500/15 text-red-400 border-red-500/30',        icon: XCircle,      step: 0 },
 };
@@ -269,7 +269,7 @@ export default function ImportDetailPage() {
             <button
               onClick={handleInspect}
               disabled={!!actionLoading}
-              className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-purple-500 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 disabled:opacity-50 transition-colors"
             >
               {actionLoading === 'inspect' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
               Kiểm tra hàng hoá
@@ -471,7 +471,7 @@ export default function ImportDetailPage() {
           <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 bg-white dark:bg-slate-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-4">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5 text-purple-400" />
+                <ClipboardCheck className="h-5 w-5 text-indigo-400" />
                 Kiểm tra hàng hoá
               </h2>
               <button onClick={() => setShowInspect(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
@@ -492,7 +492,7 @@ export default function ImportDetailPage() {
                           const v = e.target.value;
                           setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, received_qty: v } : r));
                         }}
-                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                     <div>
@@ -504,7 +504,7 @@ export default function ImportDetailPage() {
                           const v = e.target.value;
                           setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, accepted_qty: v } : r));
                         }}
-                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                     <div>
@@ -516,7 +516,7 @@ export default function ImportDetailPage() {
                           const v = e.target.value;
                           setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, rejected_qty: v } : r));
                         }}
-                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                   </div>
@@ -529,7 +529,7 @@ export default function ImportDetailPage() {
                   value={inspectNotes}
                   onChange={(e) => setInspectNotes(e.target.value)}
                   placeholder="Mô tả vấn đề nếu có..."
-                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
               </div>
               <div className="flex justify-end gap-3 pt-2">
@@ -541,7 +541,7 @@ export default function ImportDetailPage() {
                 </button>
                 <button
                   onClick={submitInspect}
-                  className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-purple-500 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 transition-colors"
                 >
                   <ClipboardCheck className="h-4 w-4" />
                   Lưu kết quả kiểm tra

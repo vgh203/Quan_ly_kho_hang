@@ -7,7 +7,7 @@ import api from '@/lib/api';
 import {
   LogOut, User, Shield, Mail, AlertTriangle, ShieldAlert,
   Calendar, Clock, Eye, ArrowRight, TrendingDown,
-  Layers, ArrowDownLeft, ArrowUpRight, AlertCircle, Loader2, Sparkles
+  Layers, ArrowDownLeft, ArrowUpRight, AlertCircle, Loader2, Sparkles, Plus
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -453,6 +453,68 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Admin Replenishment Suggestion Widget */}
+      {user?.role === 'admin' && (
+        <div className="rounded-2xl border border-indigo-200/60 dark:border-indigo-900/50 bg-indigo-50/30 dark:bg-indigo-950/10 p-5 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-bold text-slate-850 dark:text-white flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-indigo-500" />
+              Đề xuất bổ sung kho (Replenishment Suggestions)
+            </h3>
+            {alerts.low_stock_count > 0 && (
+              <button
+                onClick={() => router.push('/dashboard/imports/new')}
+                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-indigo-700 transition cursor-pointer"
+              >
+                <Plus className="h-4 w-4" /> Tạo phiếu nhập ngay
+              </button>
+            )}
+          </div>
+          
+          <div className="flex-1">
+            {alerts.low_stock.length === 0 ? (
+              <p className="text-sm text-slate-500 py-6 text-center bg-white dark:bg-slate-900/40 rounded-xl border border-slate-200/50 dark:border-slate-800">
+                Tất cả sản phẩm đều ở mức an toàn. Chưa cần bổ sung lúc này.
+              </p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900/40">
+                <table className="w-full text-left text-xs md:text-sm text-slate-600 dark:text-slate-350">
+                  <thead className="text-[11px] uppercase tracking-wider text-slate-500 bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200/60 dark:border-slate-800">
+                    <tr>
+                      <th className="px-4 py-3">Mã SP</th>
+                      <th className="px-4 py-3">Sản phẩm cần nhập</th>
+                      <th className="px-4 py-3 text-right">Tồn hiện tại</th>
+                      <th className="px-4 py-3 text-right">Định mức</th>
+                      <th className="px-4 py-3 text-right text-indigo-600 dark:text-indigo-400 font-bold">Số lượng đề xuất nhập</th>
+                      <th className="px-4 py-3 text-right">Dự toán</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200/60 dark:divide-slate-800/60">
+                    {alerts.low_stock.map((item) => {
+                      const suggestAmount = item.shortage + Math.ceil(item.min_stock * 0.5); // Example rule: replenish shortage + 50% buffer
+                      const estCost = suggestAmount * (item.unit_price || 0);
+                      return (
+                        <tr key={item.product_id} className="hover:bg-slate-50/40 dark:hover:bg-slate-900/20">
+                          <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200 font-mono">{item.product_code}</td>
+                          <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">{item.product_name}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-red-600 dark:text-red-450">{item.current_stock}</td>
+                          <td className="px-4 py-3 text-right text-slate-500">{item.min_stock}</td>
+                          <td className="px-4 py-3 text-right font-bold text-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10">
+                            +{suggestAmount} {item.unit}
+                          </td>
+                          <td className="px-4 py-3 text-right text-slate-500 font-medium">
+                            {formatCurrency(estCost)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal chi tiết cảnh báo sức khỏe kho hàng */}
       {selectedAlertCategory && (

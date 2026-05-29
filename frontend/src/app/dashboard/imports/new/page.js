@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDialogStore } from '@/store/useDialogStore';
 import {
   Building2,
   Plus,
@@ -48,6 +49,7 @@ const getArrivalDate = (dateValue, days) => {
 
 export default function NewImportPage() {
   const router = useRouter();
+  const { showAlert } = useDialogStore();
   const [allProducts, setAllProducts] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -161,7 +163,6 @@ export default function NewImportPage() {
       ? allProducts.filter((p) => (p.supplier_ids || []).includes(nextSupplierId))
       : allProducts;
     setProductOptions(filtered);
-    resetItems();
   };
 
   const updateItem = (index, field, value) => {
@@ -263,6 +264,7 @@ export default function NewImportPage() {
         })),
       });
 
+      showAlert('Thành công', 'Đã tạo phiếu nhập thành công!');
       router.push(`/dashboard/imports/${res.data.id}`);
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.message || 'Lỗi khi tạo phiếu nhập.');
@@ -318,21 +320,19 @@ export default function NewImportPage() {
                 So sánh NCC
               </button>
             </div>
-            <input
-              list="import-supplier-list"
+            <select
               required
               value={supplierId}
               onChange={(event) => handleSupplierChange(event.target.value)}
-              placeholder="Nhập hoặc chọn mã nhà cung cấp..."
               className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 dark:border-slate-700 dark:bg-slate-950"
-            />
-            <datalist id="import-supplier-list">
+            >
+              <option value="">-- Chọn nhà cung cấp --</option>
               {suppliers.map((supplier) => (
                 <option key={supplier.id} value={supplier.id}>
                   {supplier.name}
                 </option>
               ))}
-            </datalist>
+            </select>
           </div>
 
           <label className="space-y-1">

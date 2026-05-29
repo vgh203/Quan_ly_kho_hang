@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useDialogStore } from '@/store/useDialogStore';
 import {
   ArrowUpFromLine, ArrowLeft, CheckCircle2,
   XCircle, Clock, AlertCircle, Building2,
@@ -66,6 +67,7 @@ export default function ExportDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { token, user } = useAuthStore();
+  const { showConfirm } = useDialogStore();
 
   const [receipt, setReceipt]   = useState(null);
   const [loading, setLoading]   = useState(true);
@@ -110,9 +112,11 @@ export default function ExportDetailPage() {
   };
 
   const handleApprove = () => {
-    if (confirm('Phê duyệt phiếu xuất trả nhà cung cấp và tự động trừ tồn kho?')) {
-      doAction('approve');
-    }
+    showConfirm(
+      'Phê duyệt Phiếu xuất',
+      'Phê duyệt phiếu xuất kho và tự động trừ tồn kho hiện tại?',
+      () => doAction('approve')
+    );
   };
 
   const submitReject = () => {

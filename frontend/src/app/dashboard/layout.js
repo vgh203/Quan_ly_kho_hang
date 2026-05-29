@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { io } from 'socket.io-client';
+import GlobalDialog from '@/components/GlobalDialog';
 
 export default function DashboardLayout({ children }) {
   const { isAuthenticated, isLoading, user, logout } = useAuthStore();
@@ -381,6 +382,7 @@ export default function DashboardLayout({ children }) {
         </header>
 
         <main className="min-w-0 flex-1 p-4 md:p-6">
+          <GlobalDialog />
           {children}
         </main>
       </div>

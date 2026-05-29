@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDialogStore } from '@/store/useDialogStore';
 import {
   AlertCircle,
   AlertTriangle,
@@ -45,6 +46,7 @@ const daysUntil = (dateValue) => {
 
 export default function NewExportPage() {
   const router = useRouter();
+  const { showAlert } = useDialogStore();
   const [products, setProducts] = useState([]);
   const [returnableProducts, setReturnableProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -111,12 +113,10 @@ export default function NewExportPage() {
     setReason(value);
     setSupplierId('');
     setReturnableProducts([]);
-    resetItems();
   };
 
   const handleSupplierChange = (value) => {
     setSupplierId(value);
-    resetItems();
   };
 
   const selectedProductIds = items.map((item) => item.productId).filter(Boolean);
@@ -292,6 +292,7 @@ export default function NewExportPage() {
         })),
       });
 
+      showAlert('Thành công', 'Đã tạo phiếu xuất thành công!');
       router.push(`/dashboard/exports/${res.data.id}`);
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.message || 'Lỗi khi tạo phiếu xuất.');

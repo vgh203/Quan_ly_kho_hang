@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useDialogStore } from '@/store/useDialogStore';
 import {
   ArrowDownToLine, Plus, Search, Filter, RefreshCw,
   Eye, Trash2, ChevronLeft, ChevronRight, TrendingDown,
@@ -40,6 +41,7 @@ function formatCurrency(n) {
 export default function ImportsPage() {
   const router = useRouter();
   const { token, user } = useAuthStore();
+  const { showConfirm, showAlert } = useDialogStore();
 
   const [receipts, setReceipts]   = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 15, total_pages: 1 });
@@ -154,15 +156,21 @@ export default function ImportsPage() {
   };
 
   // ── delete ─────────────────────────────────────────────────
-  const handleDelete = async (id, code) => {
-    if (!confirm(`Xoá phiếu nhập ${code}?`)) return;
-    try {
-      await api.delete(`/imports/${id}`);
-      fetchReceipts();
-      fetchStats();
-    } catch (e) {
-      alert(e.response?.data?.error || e.message);
-    }
+  const handleDelete = (id, code) => {
+    showConfirm(
+      'Xác nhận Xóa',
+      `Bạn có chắc muốn xóa vĩnh viễn phiếu nhập ${code}?`,
+      async () => {
+        try {
+          await api.delete(`/imports/${id}`);
+          showAlert('Thành công', 'Đã xóa phiếu nhập thành công.');
+          fetchReceipts();
+          fetchStats();
+        } catch (e) {
+          showAlert('Lỗi', e.response?.data?.error || e.message);
+        }
+      }
+    );
   };
 
   const handleExportExcel = () => {

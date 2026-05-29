@@ -8,6 +8,7 @@ import * as z from 'zod';
 import api from '@/lib/api';
 import { createSupplierAction } from '@/app/actions/supplierActions';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useDialogStore } from '@/store/useDialogStore';
 import { 
   Plus, Search, Edit2, Trash2, X, AlertCircle, Eye,
   Check, Loader2, Sparkles, MapPin, Phone, Mail, User, Info, Navigation, Warehouse
@@ -39,6 +40,7 @@ const supplierFormSchema = z.object({
 
 export default function SuppliersPage() {
   const { user } = useAuthStore();
+  const { showAlert, showConfirm } = useDialogStore();
   const isAdmin = user?.role === 'admin';
 
   // State
@@ -223,7 +225,7 @@ export default function SuppliersPage() {
     setValue('distance_km', distance);
     setTempLat(lat);
     setTempLng(lng);
-    setFormErrorMsg(distance > 0 ? '' : 'Da ghim toa do, nhung chua tinh duoc tuyen duong bo thuc te tu OSRM.');
+    setFormErrorMsg(distance > 0 ? '' : 'Đã ghim tọa độ, nhưng chưa tính được tuyến đường bộ thực tế từ OSRM.');
   };
 
   // Form submit
@@ -232,7 +234,7 @@ export default function SuppliersPage() {
     setFormErrorMsg('');
     try {
       if (Number(data.distance_km) <= 0) {
-        setFormErrorMsg('Vui long dinh vi nha cung cap va tinh duoc tuyen duong bo thuc te truoc khi luu.');
+        setFormErrorMsg('Vui lòng định vị nhà cung cấp và tính được tuyến đường bộ thực tế trước khi lưu.');
         setSubmitLoading(false);
         return;
       }
@@ -255,6 +257,7 @@ export default function SuppliersPage() {
         }
       }
       setIsFormOpen(false);
+      showAlert('Thành công', 'Lưu nhà cung cấp thành công!');
       loadSuppliers();
     } catch (err) {
       console.error(err);
@@ -265,16 +268,21 @@ export default function SuppliersPage() {
   };
 
   // Delete
-  const handleDeleteClick = async (supplierId, name) => {
-    if (confirm(`Bạn có chắc muốn ẩn nhà cung cấp "${name}"?`)) {
-      try {
-        await api.delete(`/suppliers/${supplierId}`);
-        loadSuppliers();
-      } catch (err) {
-        console.error(err);
-        alert(err.response?.data?.error || 'Không thể xóa nhà cung cấp.');
+  const handleDeleteClick = (supplierId, name) => {
+    showConfirm(
+      'Xác nhận Xóa',
+      `Bạn có chắc muốn ẩn nhà cung cấp "${name}"?`,
+      async () => {
+        try {
+          await api.delete(`/suppliers/${supplierId}`);
+          showAlert('Thành công', 'Đã xóa nhà cung cấp thành công.');
+          loadSuppliers();
+        } catch (err) {
+          console.error(err);
+          showAlert('Lỗi', err.response?.data?.error || 'Không thể xóa nhà cung cấp.');
+        }
       }
-    }
+    );
   };
 
   // Filter

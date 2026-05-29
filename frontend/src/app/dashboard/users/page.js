@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useDialogStore } from '@/store/useDialogStore';
 import { useRouter } from 'next/navigation';
 import { 
   Plus, Search, Edit2, Trash2, X, AlertCircle, Eye,
@@ -38,6 +39,7 @@ const userEditSchema = z.object({
 
 export default function UsersPage() {
   const { user: currentUser } = useAuthStore();
+  const { showAlert, showConfirm } = useDialogStore();
   const router = useRouter();
 
   // Redirect if not admin
@@ -166,35 +168,45 @@ export default function UsersPage() {
   };
 
   // Lock user account (soft delete)
-  const handleLockUser = async (userId, username) => {
-    if (confirm(`Bạn có chắc muốn vô hiệu hóa/khóa tài khoản "${username}"?`)) {
-      try {
-        await api.delete(`/users/${userId}`);
-        loadUsers();
-      } catch (err) {
-        console.error(err);
-        alert(err.response?.data?.message || 'Không thể khóa tài khoản này.');
+  const handleLockUser = (userId, username) => {
+    showConfirm(
+      'Khóa tài khoản',
+      `Bạn có chắc muốn vô hiệu hóa/khóa tài khoản "${username}"?`,
+      async () => {
+        try {
+          await api.delete(`/users/${userId}`);
+          showAlert('Thành công', 'Đã khóa tài khoản thành công.');
+          loadUsers();
+        } catch (err) {
+          console.error(err);
+          showAlert('Lỗi', err.response?.data?.message || 'Không thể khóa tài khoản này.');
+        }
       }
-    }
+    );
   };
 
   // Unlock user account
-  const handleUnlockUser = async (user) => {
-    if (confirm(`Bạn có chắc muốn mở khóa lại tài khoản "${user.username}"?`)) {
-      try {
-        await api.put(`/users/${user.id}`, {
-          username: user.username,
-          full_name: user.full_name,
-          email: user.email,
-          role: user.role,
-          is_active: true
-        });
-        loadUsers();
-      } catch (err) {
-        console.error(err);
-        alert(err.response?.data?.message || 'Không thể mở khóa tài khoản.');
+  const handleUnlockUser = (user) => {
+    showConfirm(
+      'Mở khóa tài khoản',
+      `Bạn có chắc muốn mở khóa lại tài khoản "${user.username}"?`,
+      async () => {
+        try {
+          await api.put(`/users/${user.id}`, {
+            username: user.username,
+            full_name: user.full_name,
+            email: user.email,
+            role: user.role,
+            is_active: true
+          });
+          showAlert('Thành công', 'Đã mở khóa tài khoản thành công.');
+          loadUsers();
+        } catch (err) {
+          console.error(err);
+          showAlert('Lỗi', err.response?.data?.message || 'Không thể mở khóa tài khoản.');
+        }
       }
-    }
+    );
   };
 
   // Filter users based on query
@@ -573,3 +585,4 @@ export default function UsersPage() {
     </div>
   );
 }
+

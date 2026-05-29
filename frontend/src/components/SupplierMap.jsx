@@ -95,7 +95,7 @@ function MapClickHandler({ onMapClick, active, onRouteError }) {
         onMapClick(lat, lng, distance, routeCoords);
       } catch (err) {
         console.error('OSRM API error:', err);
-        onRouteError('Khong tim duoc tuyen duong bo thuc te tu kho den vi tri nay. Vui long chon vi tri khac hoac thu lai sau.');
+        onRouteError('Không tìm được tuyến đường bộ thực tế từ kho đến vị trí này. Vui lòng chọn vị trí khác hoặc thử lại sau.');
         onMapClick(lat, lng, 0, []);
       }
     },
@@ -126,7 +126,7 @@ export default function SupplierMap({
           setActiveRoute(routeCoords);
         } catch (e) {
           console.warn('OSRM routing fetch failed:', e);
-          setRouteError('Khong tai duoc tuyen duong bo thuc te cho nha cung cap nay.');
+          setRouteError('Không tải được tuyến đường bộ thực tế cho nhà cung cấp này.');
           setActiveRoute([]);
         }
       };
@@ -161,7 +161,7 @@ export default function SupplierMap({
           setActiveRoute(routeCoords);
         } catch (e) {
           console.warn('OSRM routing fetch failed:', e);
-          setRouteError('Khong tim duoc tuyen duong bo thuc te den vi tri dang chon.');
+          setRouteError('Không tìm được tuyến đường bộ thực tế đến vị trí đang chọn.');
           setActiveRoute([]);
         }
       };

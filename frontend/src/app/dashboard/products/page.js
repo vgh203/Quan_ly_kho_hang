@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useDialogStore } from '@/store/useDialogStore';
 import { 
   Plus, Search, QrCode, Edit2, Trash2, Printer, 
   X, AlertCircle, Check, Loader2, Sparkles, Filter,
@@ -28,6 +29,7 @@ const productFormSchema = z.object({
 
 export default function ProductsPage() {
   const { user } = useAuthStore();
+  const { showAlert, showConfirm } = useDialogStore();
   const isAdmin = user?.role === 'admin';
 
   // Component states
@@ -242,6 +244,7 @@ export default function ProductsPage() {
       }
 
       setIsFormOpen(false);
+      showAlert('Thành công', 'Lưu sản phẩm thành công!');
       loadData();
     } catch (err) {
       console.error('Submit failed:', err);
@@ -252,16 +255,21 @@ export default function ProductsPage() {
   };
 
   // Handle Product Delete (Soft delete)
-  const handleDeleteClick = async (productId, name) => {
-    if (confirm(`Bạn có chắc chắn muốn ẩn sản phẩm "${name}" khỏi hệ thống? Thao tác này không thể hoàn tác.`)) {
-      try {
-        await api.delete(`/products/${productId}`);
-        loadData();
-      } catch (err) {
-        console.error('Delete failed:', err);
-        alert(err.response?.data?.error || 'Không thể xóa sản phẩm.');
+  const handleDeleteClick = (productId, name) => {
+    showConfirm(
+      'Xác nhận Xóa',
+      `Bạn có chắc chắn muốn ẩn sản phẩm "${name}" khỏi hệ thống? Thao tác này không thể hoàn tác.`,
+      async () => {
+        try {
+          await api.delete(`/products/${productId}`);
+          showAlert('Thành công', 'Đã xóa sản phẩm thành công.');
+          loadData();
+        } catch (err) {
+          console.error('Delete failed:', err);
+          showAlert('Lỗi', err.response?.data?.error || 'Không thể xóa sản phẩm.');
+        }
       }
-    }
+    );
   };
 
   // Print QR Code Label

@@ -163,8 +163,28 @@ Quan_ly_kho_hang/
 
 ---
 
+## Triển khai (Deploy)
+
+| Thành phần | Nền tảng |
+|------------|----------|
+| Frontend | [Vercel](https://vercel.com) — root `frontend/` |
+| Backend | [Render](https://render.com) — root `backend/` |
+| Database | [Neon](https://neon.tech) PostgreSQL |
+
+Chi tiết từng bước: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+
+**Biến môi trường quan trọng**
+
+- Backend: `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN` (URL Vercel)
+- Frontend: `NEXT_PUBLIC_API_URL` (ví dụ `https://your-api.onrender.com/api`)
+
+Sau deploy, kiểm tra: `GET /api/health` trên backend và đăng nhập trên frontend.
+
+---
+
 ## Lưu ý
 
-- Database đã được host sẵn trên **Neon Cloud** — bạn **không cần cài PostgreSQL** trên máy.
-- Nếu gặp lỗi `prisma generate`, hãy đảm bảo đã chạy lệnh này trước khi khởi động server.
-- Backend chạy mặc định trên cổng **5001**, frontend trên cổng **3000**.
+- Database có thể host trên **Neon Cloud** — không bắt buộc cài PostgreSQL local.
+- Copy `backend/.env.example` và `frontend/.env.example` thành `.env` — **không commit file `.env` thật**.
+- Nếu gặp lỗi `prisma generate`, chạy `npx prisma generate` trong thư mục `backend` trước khi start.
+- Backend mặc định cổng **5001**, frontend cổng **3000**.

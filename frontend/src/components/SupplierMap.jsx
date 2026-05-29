@@ -66,47 +66,37 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Haversine formula fallback
-const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return Number((R * c).toFixed(1));
+const fetchDrivingRoute = async (lat, lng) => {
+  const res = await fetch(
+    `https://router.project-osrm.org/route/v1/driving/${WAREHOUSE_COORDS[1]},${WAREHOUSE_COORDS[0]};${lng},${lat}?overview=full&geometries=geojson`
+  );
+  const data = await res.json();
+
+  if (!data.routes || data.routes.length === 0) {
+    throw new Error('OSRM did not return a driving route');
+  }
+
+  return {
+    distance: Number((data.routes[0].distance / 1000).toFixed(1)),
+    routeCoords: data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]),
+  };
 };
 
 // Map click handler for select mode with OSRM routing
-function MapClickHandler({ onMapClick, active }) {
+function MapClickHandler({ onMapClick, active, onRouteError }) {
   useMapEvents({
     async click(e) {
       if (!active) return;
       const { lat, lng } = e.latlng;
       
       try {
-        const res = await fetch(
-          `https://router.project-osrm.org/route/v1/driving/${WAREHOUSE_COORDS[1]},${WAREHOUSE_COORDS[0]};${lng},${lat}?overview=full&geometries=geojson`
-        );
-        const data = await res.json();
-        
-        let distance = 0;
-        let routeCoords = [[WAREHOUSE_COORDS[0], WAREHOUSE_COORDS[1]], [lat, lng]];
-
-        if (data.routes && data.routes.length > 0) {
-          distance = Number((data.routes[0].distance / 1000).toFixed(1));
-          routeCoords = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-        } else {
-          distance = calculateHaversineDistance(WAREHOUSE_COORDS[0], WAREHOUSE_COORDS[1], lat, lng);
-        }
-
+        const { distance, routeCoords } = await fetchDrivingRoute(lat, lng);
+        onRouteError('');
         onMapClick(lat, lng, distance, routeCoords);
       } catch (err) {
         console.error('OSRM API error:', err);
-        const distance = calculateHaversineDistance(WAREHOUSE_COORDS[0], WAREHOUSE_COORDS[1], lat, lng);
-        onMapClick(lat, lng, distance, [WAREHOUSE_COORDS, [lat, lng]]);
+        onRouteError('Khong tim duoc tuyen duong bo thuc te tu kho den vi tri nay. Vui long chon vi tri khac hoac thu lai sau.');
+        onMapClick(lat, lng, 0, []);
       }
     },
   });
@@ -124,30 +114,26 @@ export default function SupplierMap({
   const mapRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [activeRoute, setActiveRoute] = useState([]);
+  const [routeError, setRouteError] = useState('');
 
   // Fetch OSRM route for active supplier in view mode
   useEffect(() => {
     if (mode === 'view' && selectedSupplier && selectedSupplier.latitude && selectedSupplier.longitude) {
       const fetchRoute = async () => {
         try {
-          const res = await fetch(
-            `https://router.project-osrm.org/route/v1/driving/${WAREHOUSE_COORDS[1]},${WAREHOUSE_COORDS[0]};${selectedSupplier.longitude},${selectedSupplier.latitude}?overview=full&geometries=geojson`
-          );
-          const data = await res.json();
-          if (data.routes && data.routes.length > 0) {
-            const coords = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-            setActiveRoute(coords);
-          } else {
-            setActiveRoute([WAREHOUSE_COORDS, [selectedSupplier.latitude, selectedSupplier.longitude]]);
-          }
+          const { routeCoords } = await fetchDrivingRoute(selectedSupplier.latitude, selectedSupplier.longitude);
+          setRouteError('');
+          setActiveRoute(routeCoords);
         } catch (e) {
-          console.warn('OSRM routing fetch failed, falling back to straight line:', e);
-          setActiveRoute([WAREHOUSE_COORDS, [selectedSupplier.latitude, selectedSupplier.longitude]]);
+          console.warn('OSRM routing fetch failed:', e);
+          setRouteError('Khong tai duoc tuyen duong bo thuc te cho nha cung cap nay.');
+          setActiveRoute([]);
         }
       };
       fetchRoute();
     } else {
       setActiveRoute([]);
+      setRouteError('');
     }
   }, [selectedSupplier, mode]);
 
@@ -170,18 +156,13 @@ export default function SupplierMap({
     if (mode === 'select' && selectedLat && selectedLng) {
       const fetchSelectRoute = async () => {
         try {
-          const res = await fetch(
-            `https://router.project-osrm.org/route/v1/driving/${WAREHOUSE_COORDS[1]},${WAREHOUSE_COORDS[0]};${selectedLng},${selectedLat}?overview=full&geometries=geojson`
-          );
-          const data = await res.json();
-          if (data.routes && data.routes.length > 0) {
-            const coords = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-            setActiveRoute(coords);
-          } else {
-            setActiveRoute([WAREHOUSE_COORDS, [selectedLat, selectedLng]]);
-          }
+          const { routeCoords } = await fetchDrivingRoute(selectedLat, selectedLng);
+          setRouteError('');
+          setActiveRoute(routeCoords);
         } catch (e) {
-          setActiveRoute([WAREHOUSE_COORDS, [selectedLat, selectedLng]]);
+          console.warn('OSRM routing fetch failed:', e);
+          setRouteError('Khong tim duoc tuyen duong bo thuc te den vi tri dang chon.');
+          setActiveRoute([]);
         }
       };
       fetchSelectRoute();
@@ -201,6 +182,17 @@ export default function SupplierMap({
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+        <MapClickHandler
+          active={mode === 'select'}
+          onRouteError={setRouteError}
+          onMapClick={(lat, lng, distance, routeCoords) => {
+            setActiveRoute(routeCoords);
+            if (onPositionSelected) {
+              onPositionSelected(lat, lng, distance);
+            }
+          }}
         />
 
         {/* Central Warehouse Marker with Warehouse Icon */}
@@ -270,6 +262,12 @@ export default function SupplierMap({
       <div className="absolute top-4 left-12 z-[400] rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 text-[10px] text-slate-600 dark:text-slate-400 shadow">
         🏢 Kho: Q.10, TP.HCM
       </div>
+
+      {routeError && (
+        <div className="absolute top-14 left-12 right-4 z-[400] rounded-lg border border-amber-200 bg-amber-50 p-2 text-[10px] font-medium text-amber-700 shadow dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          {routeError}
+        </div>
+      )}
 
       {mode === 'select' && (
         <div className="absolute bottom-4 left-4 z-[400] rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 text-xs text-slate-600 dark:text-slate-300 max-w-[240px] shadow-lg">

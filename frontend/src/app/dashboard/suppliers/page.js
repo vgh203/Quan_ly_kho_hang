@@ -32,7 +32,7 @@ const supplierFormSchema = z.object({
   phone: z.string().min(8, 'Số điện thoại không hợp lệ'),
   email: z.string().email('Địa chỉ email không đúng định dạng'),
   address: z.string().min(5, 'Địa chỉ chi tiết phải có ít nhất 5 ký tự'),
-  distance_km: z.coerce.number().min(0, 'Khoảng cách phải lớn hơn hoặc bằng 0'),
+  distance_km: z.coerce.number().min(0.1, 'Khoảng cách phải được tính bằng tuyến đường bộ thực tế'),
   latitude: z.coerce.number().min(-90).max(90, 'Vĩ độ không hợp lệ (-90 đến 90)'),
   longitude: z.coerce.number().min(-180).max(180, 'Kinh độ không hợp lệ (-180 đến 180)'),
 });
@@ -142,12 +142,12 @@ export default function SuppliersPage() {
             const roadDistance = Number((osrmData.routes[0].distance / 1000).toFixed(1));
             setValue('distance_km', roadDistance);
           } else {
-            const straightDist = calculateHaversine(10.762622, 106.660172, lat, lon);
-            setValue('distance_km', straightDist);
+            setValue('distance_km', 0);
+            setFormErrorMsg('Da dinh vi duoc toa do, nhung OSRM chua tim duoc tuyen duong bo thuc te. Vui long thu dia chi khac hoac ghim tren ban do.');
           }
         } catch (e) {
-          const straightDist = calculateHaversine(10.762622, 106.660172, lat, lon);
-          setValue('distance_km', straightDist);
+          setValue('distance_km', 0);
+          setFormErrorMsg('Khong ket noi duoc OSRM de tinh duong bo thuc te. He thong khong dung khoang cach duong chim bay de thay the.');
         }
       } else {
         setFormErrorMsg('Không tìm thấy tọa độ địa lý cho địa chỉ này. Vui lòng kiểm tra lại chính tả hoặc tự ghim trực tiếp trên bản đồ.');
@@ -158,19 +158,6 @@ export default function SuppliersPage() {
     } finally {
       setGeocoding(false);
     }
-  };
-
-  // Helper Haversine
-  const calculateHaversine = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return Number((R * c).toFixed(1));
   };
 
   // Add click
@@ -236,6 +223,7 @@ export default function SuppliersPage() {
     setValue('distance_km', distance);
     setTempLat(lat);
     setTempLng(lng);
+    setFormErrorMsg(distance > 0 ? '' : 'Da ghim toa do, nhung chua tinh duoc tuyen duong bo thuc te tu OSRM.');
   };
 
   // Form submit
@@ -243,6 +231,12 @@ export default function SuppliersPage() {
     setSubmitLoading(true);
     setFormErrorMsg('');
     try {
+      if (Number(data.distance_km) <= 0) {
+        setFormErrorMsg('Vui long dinh vi nha cung cap va tinh duoc tuyen duong bo thuc te truoc khi luu.');
+        setSubmitLoading(false);
+        return;
+      }
+
       if (editingSupplier) {
         await api.put(`/suppliers/${editingSupplier.id}`, data);
       } else {

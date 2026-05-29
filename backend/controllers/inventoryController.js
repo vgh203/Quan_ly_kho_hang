@@ -1,4 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
+const { sendLowStockAlert } = require('../services/email.service');
+
 const prisma = new PrismaClient();
 
 const toNumber = (value) => (value === null || value === undefined ? value : Number(value));
@@ -575,5 +577,47 @@ exports.getExports = async (req, res) => {
   } catch (error) {
     console.error('Error fetching export receipts:', error);
     return res.status(500).json({ error: 'Lỗi hệ thống khi tải danh sách phiếu xuất.' });
+  }
+};
+
+// POST /api/inventory/alerts/send-email — gửi email cảnh báo tồn thấp (admin)
+exports.sendLowStockEmail = async (req, res) => {
+  try {
+    const lowStock = await prisma.$queryRaw`
+      SELECT "product_code", "product_name",
+             "current_stock"::int, "min_stock"::int,
+             ("min_stock" - "current_stock")::int AS "shortage"
+      FROM "v_stock_balance"
+      WHERE "current_stock" < "min_stock"
+      ORDER BY "shortage" DESC
+      LIMIT 50
+    `;
+
+    if (!lowStock.length) {
+      return res.json({ success: true, message: 'Không có sản phẩm tồn thấp để gửi cảnh báo.', sent: 0 });
+    }
+
+    const adminEmail =
+      process.env.ADMIN_ALERT_EMAIL ||
+      req.user?.email ||
+      process.env.EMAIL_USER;
+
+    if (!adminEmail) {
+      return res.status(400).json({ error: 'Chưa cấu hình ADMIN_ALERT_EMAIL hoặc email admin.' });
+    }
+
+    await sendLowStockAlert(lowStock, adminEmail);
+
+    return res.json({
+      success: true,
+      message: `Đã gửi email cảnh báo tới ${adminEmail}`,
+      sent: lowStock.length,
+      sentTo: adminEmail,
+    });
+  } catch (error) {
+    console.error('sendLowStockEmail error:', error);
+    return res.status(500).json({
+      error: error.message || 'Không thể gửi email cảnh báo.',
+    });
   }
 };

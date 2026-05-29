@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const inventoryController = require('../controllers/inventoryController');
-const { authenticateToken } = require('../middlewares/auth');
+const { authenticateToken, requireAdmin } = require('../middlewares/auth');
 
 router.use(authenticateToken);
 
@@ -10,6 +10,7 @@ router.get('/next-import-code', inventoryController.getNextImportCode);
 router.get('/next-export-code', inventoryController.getNextExportCode);
 router.get('/dashboard', inventoryController.getDashboard);
 router.get('/alerts', inventoryController.getAlerts);
+router.post('/alerts/send-email', requireAdmin, inventoryController.sendLowStockEmail);
 router.get('/stats', inventoryController.getStats);
 router.get('/lots/:productId', inventoryController.getProductLots);
 router.get('/returnable-products', inventoryController.getReturnableProducts);

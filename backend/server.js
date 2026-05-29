@@ -5,6 +5,7 @@ const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 const prisma = new PrismaClient();
+const ensureStockViews = require('./db/ensureStockViews');
 
 const PORT = process.env.PORT || 5001;
 
@@ -55,7 +56,6 @@ app.get('/', (req, res) => {
   res.send('Welcome to the Logistics & Supply Chain WMS API');
 });
 
-// Start server
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 
@@ -73,8 +73,19 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+async function startServer() {
+  try {
+    await ensureStockViews(prisma);
+    console.log('Stock views are ready.');
+  } catch (error) {
+    console.error('Failed to prepare stock views:', error);
+  }
+
+  server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
+
+startServer();
 
 module.exports = { app, prisma, io };

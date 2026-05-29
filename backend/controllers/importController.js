@@ -276,7 +276,16 @@ exports.update = async (req, res) => {
 exports.markArrived = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const receipt = await prisma.importReceipt.findUnique({ where: { id } });
+    const receipt = await prisma.importReceipt.findUnique({
+      where: { id },
+      include: {
+        details: {
+          include: {
+            product: { select: { id: true, name: true, category: true } },
+          },
+        },
+      },
+    });
     if (!receipt) return res.status(404).json({ error: 'Không tìm thấy phiếu nhập.' });
     if (receipt.status !== 'IN_TRANSIT') {
       return res.status(400).json({ error: 'Phiếu nhập không ở trạng thái IN_TRANSIT.' });
@@ -308,10 +317,72 @@ exports.inspect = async (req, res) => {
     const inspected_by = req.user.id;
     const { issue_notes, details = [] } = req.body;
 
-    const receipt = await prisma.importReceipt.findUnique({ where: { id } });
+    const receipt = await prisma.importReceipt.findUnique({
+      where: { id },
+      include: {
+        details: {
+          include: {
+            product: { select: { id: true, name: true, category: true } },
+          },
+        },
+      },
+    });
     if (!receipt) return res.status(404).json({ error: 'Không tìm thấy phiếu nhập.' });
     if (receipt.status !== 'ARRIVED') {
       return res.status(400).json({ error: 'Phiếu nhập phải ở trạng thái ARRIVED để kiểm tra.' });
+    }
+
+    const detailMap = new Map(receipt.details.map((detail) => [detail.id, detail]));
+    const locationDemands = new Map();
+
+    for (const d of details) {
+      const detailId = parseInt(d.detail_id, 10);
+      const detail = detailMap.get(detailId);
+      if (!detail) {
+        return res.status(400).json({ error: `Dòng kiểm kho ${detailId || ''} không thuộc phiếu nhập này.` });
+      }
+
+      const receivedQty = parseInt(d.received_qty ?? d.received_quantity, 10);
+      const acceptedQty = parseInt(d.accepted_qty ?? d.accepted_quantity ?? d.quantity, 10);
+      const rejectedQty = parseInt(d.rejected_qty ?? d.rejected_quantity, 10);
+      if ([receivedQty, acceptedQty, rejectedQty].some((qty) => Number.isNaN(qty) || qty < 0)) {
+        return res.status(400).json({ error: `Số lượng kiểm kho của "${detail.product?.name || detailId}" không hợp lệ.` });
+      }
+      if (acceptedQty + rejectedQty !== receivedQty) {
+        return res.status(400).json({ error: `Số lượng đạt và lỗi của "${detail.product?.name || detailId}" phải bằng số lượng nhận.` });
+      }
+
+      if (d.location_id) {
+        const locationId = parseInt(d.location_id, 10);
+        if (Number.isNaN(locationId)) {
+          return res.status(400).json({ error: 'Vị trí kệ không hợp lệ.' });
+        }
+
+        const location = await prisma.location.findFirst({
+          where: { id: locationId, is_active: true },
+        });
+        if (!location) {
+          return res.status(404).json({ error: `Không tìm thấy vị trí kệ id=${locationId}.` });
+        }
+        if (location.zone !== detail.product?.category) {
+          return res.status(400).json({
+            error: `Kệ "${location.location_code}" thuộc phân khu "${location.zone}", không khớp sản phẩm "${detail.product?.name}" thuộc "${detail.product?.category}".`,
+          });
+        }
+
+        const current = locationDemands.get(locationId) || { location, qty: 0 };
+        current.qty += acceptedQty;
+        locationDemands.set(locationId, current);
+      }
+    }
+
+    for (const { location, qty } of locationDemands.values()) {
+      const available = Number(location.max_capacity || 0) - Number(location.current_occupied || 0);
+      if (available < qty) {
+        return res.status(400).json({
+          error: `Kệ "${location.location_code}" không đủ sức chứa. Còn trống ${available}, cần xếp ${qty}.`,
+        });
+      }
     }
 
     for (const d of details) {
@@ -391,6 +462,20 @@ exports.complete = async (req, res) => {
       if (Object.keys(data).length > 0) {
         await prisma.importDetail.update({ where: { id: detail.id }, data });
       }
+    }
+
+    const locationDemands = new Map();
+    for (const detail of receipt.details) {
+      if (!detail.location_id) continue;
+      const qty = detail.accepted_quantity ?? detail.quantity;
+      locationDemands.set(detail.location_id, (locationDemands.get(detail.location_id) || 0) + qty);
+    }
+
+    for (const [locationId, qty] of locationDemands.entries()) {
+      await prisma.location.update({
+        where: { id: locationId },
+        data: { current_occupied: { increment: qty } },
+      });
     }
 
     const updated = await prisma.importReceipt.update({

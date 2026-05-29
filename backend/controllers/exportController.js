@@ -432,7 +432,10 @@ exports.approve = async (req, res) => {
 exports.reject = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const receipt = await prisma.exportReceipt.findUnique({ where: { id } });
+    const receipt = await prisma.exportReceipt.findUnique({
+      where: { id },
+      include: { details: true },
+    });
     if (!receipt) return res.status(404).json({ error: 'Không tìm thấy phiếu xuất.' });
     if (receipt.reason !== 'RETURN') {
       return res.status(400).json({ error: 'Chỉ từ chối phiếu trả hàng nhà cung cấp.' });
@@ -466,7 +469,10 @@ exports.reject = async (req, res) => {
 exports.cancel = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const receipt = await prisma.exportReceipt.findUnique({ where: { id } });
+    const receipt = await prisma.exportReceipt.findUnique({
+      where: { id },
+      include: { details: true },
+    });
     if (!receipt) return res.status(404).json({ error: 'Không tìm thấy phiếu xuất.' });
     if (receipt.status === 'CANCELLED') {
       return res.status(400).json({ error: 'Phiếu đã bị huỷ trước đó.' });
@@ -474,12 +480,30 @@ exports.cancel = async (req, res) => {
 
     const { cancel_reason } = req.body;
 
-    const updated = await prisma.exportReceipt.update({
-      where: { id },
-      data: {
-        status: 'CANCELLED',
-        note: cancel_reason ? `[HUỶ] ${cancel_reason}` : receipt.note,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      if (receipt.status === 'COMPLETED') {
+        for (const detail of receipt.details) {
+          const lotDetail = await tx.importDetail.findUnique({
+            where: { id: detail.import_detail_id },
+            select: { location_id: true },
+          });
+
+          if (lotDetail?.location_id) {
+            await tx.location.update({
+              where: { id: lotDetail.location_id },
+              data: { current_occupied: { increment: detail.quantity } },
+            });
+          }
+        }
+      }
+
+      return tx.exportReceipt.update({
+        where: { id },
+        data: {
+          status: 'CANCELLED',
+          note: cancel_reason ? `[HUY] ${cancel_reason}` : receipt.note,
+        },
+      });
     });
 
     return res.json({ message: 'Phiếu xuất đã bị huỷ.', receipt: updated });

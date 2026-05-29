@@ -24,8 +24,21 @@ model User {
   
   created_exports   ExportReceipt[] @relation("CreatedBy")
   approved_exports  ExportReceipt[] @relation("ApprovedBy")
+  refresh_tokens    RefreshToken[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique @db.VarChar(500)
+  user_id    Int
+  expires_at DateTime @db.Timestamp(6)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
 }
 
 model Location {

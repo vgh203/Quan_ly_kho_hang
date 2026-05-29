@@ -34,6 +34,8 @@ export const useAuthStore = create((set, get) => ({
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
+        // Cookie cho Next.js middleware (15 phút, khớp access token)
+        document.cookie = `accessToken=${accessToken}; path=/; max-age=900; SameSite=Lax`;
       }
 
       set({
@@ -54,12 +56,25 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  logout: () => {
+  logout: async () => {
+    const refreshToken = get().refreshToken;
+    const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+
+    if (refreshToken) {
+      try {
+        await axios.post(`${baseURL}/auth/logout`, { token: refreshToken });
+      } catch (error) {
+        console.warn('Logout API failed (token may already be revoked):', error);
+      }
+    }
+
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      document.cookie = 'accessToken=; path=/; max-age=0; SameSite=Lax';
     }
+
     set({
       user: null,
       accessToken: null,

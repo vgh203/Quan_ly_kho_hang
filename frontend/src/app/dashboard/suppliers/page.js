@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import api from '@/lib/api';
+import { createSupplierAction } from '@/app/actions/supplierActions';
 import { useAuthStore } from '@/store/useAuthStore';
 import { 
   Plus, Search, Edit2, Trash2, X, AlertCircle, Eye,
@@ -245,7 +246,19 @@ export default function SuppliersPage() {
       if (editingSupplier) {
         await api.put(`/suppliers/${editingSupplier.id}`, data);
       } else {
-        await api.post('/suppliers', data);
+        const formData = new FormData();
+        Object.keys(data).forEach((key) => {
+          if (data[key] !== null && data[key] !== undefined) {
+            formData.append(key, data[key]);
+          }
+        });
+        
+        const result = await createSupplierAction(formData);
+        if (!result.success) {
+          setFormErrorMsg(result.error);
+          setSubmitLoading(false);
+          return;
+        }
       }
       setIsFormOpen(false);
       loadSuppliers();

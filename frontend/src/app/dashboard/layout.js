@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { io } from 'socket.io-client';
 
 export default function DashboardLayout({ children }) {
   const { isAuthenticated, isLoading, user, logout } = useAuthStore();
@@ -81,8 +82,15 @@ export default function DashboardLayout({ children }) {
     };
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    // Connect to Socket.io for realtime updates
+    const socket = io('http://localhost:5001');
+    socket.on('new_notification', (data) => {
+      fetchNotifications(); // Re-fetch the full list when a new notification arrives
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, [isAuthenticated]);
 
   const toggleTheme = () => {

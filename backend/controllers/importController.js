@@ -217,6 +217,16 @@ exports.create = async (req, res) => {
       },
     });
 
+    // ── Gửi thông báo realtime qua Socket.io ──
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_notification', {
+        type: 'import',
+        message: `Người dùng vừa tạo phiếu nhập ${receipt_code}`,
+        timestamp: new Date()
+      });
+    }
+
     return res.status(201).json(receipt);
   } catch (err) {
     console.error('create import error:', err);

@@ -343,6 +343,16 @@ exports.create = async (req, res) => {
       return updated;
     });
 
+    // ── Gửi thông báo realtime qua Socket.io ──
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_notification', {
+        type: 'export',
+        message: `Người dùng vừa tạo phiếu xuất ${receipt_code}`,
+        timestamp: new Date()
+      });
+    }
+
     return res.status(201).json(result);
   } catch (err) {
     console.error('create export error:', err);

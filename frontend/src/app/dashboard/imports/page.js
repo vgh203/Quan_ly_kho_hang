@@ -170,7 +170,7 @@ export default function ImportsPage() {
     const data = receipts.map((r, i) => ({
       'STT': i + 1,
       'Mã phiếu': r.receipt_code,
-      'Nhà cung cấp': r.supplier?.name || '',
+      'Nhà cung cấp': r.supplier_name || '—',
       'Ngày nhập': r.import_date ? new Date(r.import_date).toLocaleDateString('vi-VN') : '',
       'Tổng tiền (VNĐ)': r.total_amount,
       'Trạng thái': STATUS_MAP[r.status]?.label || r.status,

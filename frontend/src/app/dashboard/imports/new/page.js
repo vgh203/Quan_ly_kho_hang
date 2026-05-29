@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDialogStore } from '@/store/useDialogStore';
+import QRScannerModal from '@/components/QRScannerModal';
 import {
   Building2,
   Plus,
@@ -12,6 +13,7 @@ import {
   Truck,
   X,
   AlertCircle,
+  QrCode,
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -61,6 +63,8 @@ export default function NewImportPage() {
   const [items, setItems] = useState([blankItem()]);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const [isQrOpen, setIsQrOpen] = useState(false);
 
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [compareProductId, setCompareProductId] = useState('');
@@ -155,6 +159,56 @@ export default function NewImportPage() {
     }, 0);
 
   const resetItems = () => setItems([blankItem()]);
+
+  const handleQrScanSuccess = (scannedCode) => {
+    setIsQrOpen(false);
+    
+    let extractedCode = scannedCode;
+    try {
+      const parsed = JSON.parse(scannedCode);
+      if (parsed && parsed.product_code) {
+        extractedCode = parsed.product_code;
+      }
+    } catch (e) {
+      // Not JSON, use raw text
+    }
+
+    const searchCode = String(extractedCode).trim().toLowerCase();
+    const product = allProducts.find((p) => String(p.product_code).trim().toLowerCase() === searchCode);
+    if (!product) {
+      const isJson = extractedCode !== scannedCode ? '(Đã bóc tách từ JSON)' : '(Mã quét thô)';
+      showAlert('Lỗi', `Quét được mã: [${extractedCode}] ${isJson}. Nhưng mã này không có trong Hệ thống! (Chỉ chấp nhận các mã như BK001, BK002...)`);
+      return;
+    }
+
+    if (supplierId && productOptions.length > 0) {
+      const isValidSupplier = productOptions.some(p => p.id === product.id);
+      if (!isValidSupplier) {
+        showAlert('Cảnh báo', `Sản phẩm ${product.name} không thuộc nhà cung cấp đã chọn.`);
+        return;
+      }
+    }
+
+    const newItem = {
+      _key: Math.random(),
+      productId: product.id,
+      productName: product.name,
+      quantity: '1',
+      price: product.unit_price ? String(product.unit_price) : '',
+      totalAmount: product.unit_price ? product.unit_price : 0,
+      isNewProduct: false,
+      category: product.category || '',
+    };
+
+    setItems((prev) => {
+      if (prev.length === 1 && !prev[0].productId) {
+        return [newItem];
+      }
+      return [...prev, newItem];
+    });
+    
+    showAlert('Thành công', `Đã quét sản phẩm: ${product.name}`);
+  };
 
   const handleSupplierChange = (value) => {
     setSupplierId(value);
@@ -372,10 +426,16 @@ export default function NewImportPage() {
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Chi tiết sản phẩm nhập</h2>
-            <button type="button" onClick={addRow} className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-cyan-600">
-              <Plus className="h-4 w-4" />
-              Thêm dòng
-            </button>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setIsQrOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600">
+                <QrCode className="h-4 w-4" />
+                Quét mã QR
+              </button>
+              <button type="button" onClick={addRow} className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-cyan-600">
+                <Plus className="h-4 w-4" />
+                Thêm dòng
+              </button>
+            </div>
           </div>
 
           <div className="space-y-5">
@@ -579,6 +639,11 @@ export default function NewImportPage() {
           </div>
         </div>
       )}
+      <QRScannerModal 
+        isOpen={isQrOpen} 
+        onClose={() => setIsQrOpen(false)} 
+        onScanSuccess={handleQrScanSuccess} 
+      />
     </div>
   );
 }

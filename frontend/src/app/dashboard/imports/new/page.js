@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import api from '@/lib/api';
+import { createImportAction } from '../create/actions';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -251,21 +252,28 @@ export default function NewImportPage() {
 
     setSubmitting(true);
     try {
-      const res = await api.post('/imports', {
+      const payload = {
         supplier_id: parseInt(supplierId, 10),
         import_date: importDate,
-        note,
+        note: note || undefined,
         estimated_delivery_days: deliveryDays,
         details: validItems.map((item) => ({
           product_id: parseInt(item.productId, 10),
           quantity: parseInt(item.quantity, 10),
           unit_price: Number(item.price) || 0,
         })),
-      });
+      };
 
-      router.push(`/dashboard/imports/${res.data.id}`);
+      const result = await createImportAction(payload);
+
+      if (!result.success) {
+        setError(result.message || 'Dữ liệu không hợp lệ.');
+        return;
+      }
+
+      router.push(`/dashboard/imports/${result.id}`);
     } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.message || 'Lỗi khi tạo phiếu nhập.');
+      setError(err.message || 'Lỗi khi tạo phiếu nhập.');
     } finally {
       setSubmitting(false);
     }

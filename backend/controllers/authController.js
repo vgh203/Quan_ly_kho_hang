@@ -13,12 +13,41 @@ const generateAccessToken = (user) => {
   );
 };
 
+const REFRESH_TTL_DAYS = 7;
+
 const generateRefreshToken = (user) => {
   return jwt.sign(
     { id: user.id, username: user.username },
     process.env.JWT_REFRESH_SECRET || 'dev-jwt-refresh-secret',
-    { expiresIn: '7d' }
+    { expiresIn: `${REFRESH_TTL_DAYS}d` }
   );
+};
+
+const getRefreshExpiry = () => {
+  const expires = new Date();
+  expires.setDate(expires.getDate() + REFRESH_TTL_DAYS);
+  return expires;
+};
+
+const persistRefreshToken = async (userId, token) => {
+  await prisma.refreshToken.deleteMany({ where: { user_id: userId } });
+  await prisma.refreshToken.create({
+    data: {
+      token,
+      user_id: userId,
+      expires_at: getRefreshExpiry(),
+    },
+  });
+};
+
+const verifyRefreshTokenInDb = async (token) => {
+  const stored = await prisma.refreshToken.findUnique({ where: { token } });
+  if (!stored) return null;
+  if (stored.expires_at < new Date()) {
+    await prisma.refreshToken.delete({ where: { id: stored.id } });
+    return null;
+  }
+  return stored;
 };
 
 const serializeUser = (user) => ({
@@ -87,12 +116,13 @@ const login = async (req, res) => {
     }
 
     const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
+    const refreshTokenValue = generateRefreshToken(user);
+    await persistRefreshToken(user.id, refreshTokenValue);
 
     res.json({
       message: 'Đăng nhập thành công.',
       accessToken,
-      refreshToken,
+      refreshToken: refreshTokenValue,
       user: serializeUser(user),
     });
   } catch (error) {
@@ -109,23 +139,46 @@ const refreshToken = async (req, res) => {
   }
 
   try {
-    jwt.verify(token, process.env.JWT_REFRESH_SECRET || 'dev-jwt-refresh-secret', async (err, decoded) => {
-      if (err) {
-        return res.status(403).json({ message: 'Refresh Token không hợp lệ hoặc đã hết hạn.' });
-      }
+    let decoded;
+    try {
+      decoded = jwt.verify(
+        token,
+        process.env.JWT_REFRESH_SECRET || 'dev-jwt-refresh-secret'
+      );
+    } catch {
+      return res.status(403).json({ message: 'Refresh Token không hợp lệ hoặc đã hết hạn.' });
+    }
 
-      const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    const stored = await verifyRefreshTokenInDb(token);
+    if (!stored || stored.user_id !== decoded.id) {
+      return res.status(403).json({ message: 'Refresh Token đã bị thu hồi hoặc không tồn tại.' });
+    }
 
-      if (!user || !user.is_active) {
-        return res.status(403).json({ message: 'Tài khoản không hợp lệ hoặc đã bị khóa.' });
-      }
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
 
-      const newAccessToken = generateAccessToken(user);
-      res.json({ accessToken: newAccessToken });
-    });
+    if (!user || !user.is_active) {
+      return res.status(403).json({ message: 'Tài khoản không hợp lệ hoặc đã bị khóa.' });
+    }
+
+    const newAccessToken = generateAccessToken(user);
+    return res.json({ accessToken: newAccessToken });
   } catch (error) {
     console.error('Error refreshing token:', error);
-    res.status(500).json({ message: 'Lỗi máy chủ khi làm mới token.' });
+    return res.status(500).json({ message: 'Lỗi máy chủ khi làm mới token.' });
+  }
+};
+
+const logout = async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    if (token) {
+      await prisma.refreshToken.deleteMany({ where: { token } });
+    }
+    return res.json({ message: 'Đăng xuất thành công.' });
+  } catch (error) {
+    console.error('Error during logout:', error);
+    return res.status(500).json({ message: 'Lỗi máy chủ khi đăng xuất.' });
   }
 };
 
@@ -216,7 +269,9 @@ const changePassword = async (req, res) => {
       data: { password_hash: nextPasswordHash },
     });
 
-    res.json({ message: 'Đổi mật khẩu thành công.' });
+    await prisma.refreshToken.deleteMany({ where: { user_id: req.user.id } });
+
+    res.json({ message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại trên các thiết bị khác.' });
   } catch (error) {
     console.error('Error changing password:', error);
     res.status(500).json({ message: 'Lỗi máy chủ khi đổi mật khẩu.' });
@@ -226,6 +281,7 @@ const changePassword = async (req, res) => {
 module.exports = {
   login,
   refreshToken,
+  logout,
   getProfile,
   updateProfile,
   changePassword,

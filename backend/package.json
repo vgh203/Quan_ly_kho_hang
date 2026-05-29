@@ -10,7 +10,9 @@
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:studio": "npx prisma studio",
-    "db:seed": "npx prisma db seed"
+    "db:seed": "npx prisma db seed",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -27,7 +29,14 @@
     "socket.io": "^4.7.5"
   },
   "devDependencies": {
+    "jest": "^29.7.0",
     "nodemon": "^3.1.0",
     "prisma": "^5.14.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/__tests__/**/*.test.js"
+    ]
   }
 }

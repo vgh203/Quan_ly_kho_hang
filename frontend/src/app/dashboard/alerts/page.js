@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CalendarClock, Clock, Loader2, ShieldAlert, TrendingDown } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Clock, Loader2, Mail, ShieldAlert, TrendingDown } from 'lucide-react';
 import api from '@/lib/api';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const tabs = [
   { key: 'low_stock', label: 'Tồn thấp', icon: AlertTriangle, active: 'bg-red-500 text-white shadow-lg shadow-red-200', idle: 'bg-white text-red-600 border-red-200 hover:bg-red-50' },
@@ -71,9 +72,12 @@ const config = {
 };
 
 export default function AlertsPage() {
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('low_stock');
   const [alerts, setAlerts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [emailStatus, setEmailStatus] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     const loadAlerts = async () => {
@@ -92,21 +96,50 @@ export default function AlertsPage() {
     loadAlerts();
   }, []);
 
+  const handleSendEmail = async () => {
+    setSendingEmail(true);
+    setEmailStatus('');
+    try {
+      const res = await api.post('/inventory/alerts/send-email');
+      setEmailStatus(res.data.message || 'Đã gửi email cảnh báo.');
+    } catch (error) {
+      setEmailStatus(error.response?.data?.error || 'Gửi email thất bại. Kiểm tra cấu hình EMAIL_* trong backend/.env');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   const activeConfig = config[activeTab];
   const data = useMemo(() => alerts[activeTab] || [], [alerts, activeTab]);
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500 text-white shadow-lg shadow-cyan-200">
-            <ShieldAlert className="h-5 w-5" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500 text-white shadow-lg shadow-cyan-200">
+              <ShieldAlert className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-800">{activeConfig.title}</h1>
+              <p className="text-sm text-slate-500">{activeConfig.description}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">{activeConfig.title}</h1>
-            <p className="text-sm text-slate-500">{activeConfig.description}</p>
-          </div>
+          {user?.role === 'admin' && activeTab === 'low_stock' && (
+            <button
+              type="button"
+              onClick={handleSendEmail}
+              disabled={sendingEmail}
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+            >
+              <Mail className="h-4 w-4" />
+              {sendingEmail ? 'Đang gửi...' : 'Gửi email cảnh báo'}
+            </button>
+          )}
         </div>
+        {emailStatus && (
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">{emailStatus}</p>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">

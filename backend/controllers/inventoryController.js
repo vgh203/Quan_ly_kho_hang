@@ -1,6 +1,112 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const toNumber = (value) => (value === null || value === undefined ? value : Number(value));
+const toIsoDate = (value) => {
+  if (!value) return value;
+  if (value instanceof Date) return value.toISOString().split('T')[0];
+  return value;
+};
+
+const serializeRow = (row) => {
+  const result = {};
+  for (const [key, value] of Object.entries(row)) {
+    if (value instanceof Date) result[key] = toIsoDate(value);
+    else if (typeof value === 'bigint') result[key] = Number(value);
+    else if (value && typeof value === 'object' && typeof value.toNumber === 'function') result[key] = value.toNumber();
+    else result[key] = value;
+  }
+  return result;
+};
+
+// GET /api/inventory
+exports.getInventory = async (req, res) => {
+  try {
+    const { category, low_stock_only } = req.query;
+    const rows = await prisma.$queryRaw`
+      SELECT *
+      FROM "v_stock_balance"
+      WHERE (${category || null}::text IS NULL OR "category" = ${category || null})
+        AND (${low_stock_only === 'true'}::boolean = false OR "current_stock" < "min_stock")
+      ORDER BY "product_code" ASC
+    `;
+
+    const inventory = rows.map(serializeRow);
+    return res.json({ total: inventory.length, inventory });
+  } catch (error) {
+    console.error('Error fetching inventory:', error);
+    return res.status(500).json({ error: 'Lỗi hệ thống khi tải tồn kho hiện tại.' });
+  }
+};
+
+// GET /api/inventory/lots/:productId
+exports.getProductLots = async (req, res) => {
+  try {
+    const productId = parseInt(req.params.productId, 10);
+    if (!productId) return res.status(400).json({ error: 'productId không hợp lệ.' });
+
+    const lots = await prisma.$queryRaw`
+      SELECT "lot_id"::int, "batch_code", "expiry_date", "import_date", "supplier_id"::int,
+             "import_qty"::int, "exported_qty"::int, "current_lot_stock"::int,
+             "available_lot_stock"::int, "unit_price"::float, "receipt_code"
+      FROM "v_lot_stock"
+      WHERE "product_id" = ${productId}
+      ORDER BY "expiry_date" ASC NULLS LAST, "import_date" ASC
+    `;
+
+    return res.json({
+      product_id: productId,
+      lots: lots.map(serializeRow),
+      total: lots.length,
+    });
+  } catch (error) {
+    console.error('Error fetching product lots:', error);
+    return res.status(500).json({ error: 'Lỗi hệ thống khi tải danh sách lô hàng.' });
+  }
+};
+
+// GET /api/inventory/returnable-products?supplier_id=1
+exports.getReturnableProducts = async (req, res) => {
+  try {
+    const supplierId = parseInt(req.query.supplier_id, 10);
+    if (!supplierId) return res.status(400).json({ error: 'supplier_id là bắt buộc.' });
+
+    const rows = await prisma.$queryRaw`
+      SELECT
+          p.id,
+          p.product_code,
+          p.name,
+          p.unit,
+          p.category,
+          p.description,
+          p.min_stock,
+          p.min_days_to_sell,
+          p.expiry_warning_days,
+          p.unit_price::float,
+          p.location_id,
+          COALESCE(SUM(vls.available_lot_stock), 0)::int AS current_stock
+      FROM "v_lot_stock" vls
+      JOIN "products" p ON p.id = vls.product_id
+      WHERE vls.supplier_id = ${supplierId}
+        AND vls.available_lot_stock > 0
+        AND p.is_active = TRUE
+      GROUP BY p.id, p.product_code, p.name, p.unit, p.category,
+               p.description, p.min_stock, p.min_days_to_sell,
+               p.expiry_warning_days, p.unit_price, p.location_id
+      ORDER BY p.product_code
+    `;
+
+    return res.json({
+      supplier_id: supplierId,
+      products: rows.map(serializeRow),
+      total: rows.length,
+    });
+  } catch (error) {
+    console.error('Error fetching returnable products:', error);
+    return res.status(500).json({ error: 'Lỗi hệ thống khi tải sản phẩm có thể trả NCC.' });
+  }
+};
+
 // GET /api/inventory/dashboard
 exports.getDashboard = async (req, res) => {
   try {
@@ -218,6 +324,152 @@ exports.getStats = async (req, res) => {
   } catch (error) {
     console.error('Error fetching inventory stats:', error);
     return res.status(500).json({ error: 'Lỗi hệ thống khi tải thống kê biểu đồ.' });
+  }
+};
+
+// GET /api/inventory/bell-notifications
+exports.getBellNotifications = async (req, res) => {
+  try {
+    const [lowStock, expiringSoon, expired, pendingImports, pendingReturns, recentImports, recentExports] = await Promise.all([
+      prisma.$queryRaw`SELECT COUNT(*)::int AS c FROM "v_stock_balance" WHERE "current_stock" < "min_stock"`,
+      prisma.$queryRaw`
+        SELECT COUNT(*)::int AS c
+        FROM "v_lot_stock" vls
+        JOIN "products" p ON p.id = vls.product_id
+        WHERE vls.expiry_date IS NOT NULL
+          AND (vls.expiry_date - CURRENT_DATE) <= p.expiry_warning_days
+          AND vls.expiry_date >= CURRENT_DATE
+          AND vls.available_lot_stock > 0
+      `,
+      prisma.$queryRaw`
+        SELECT COUNT(*)::int AS c
+        FROM "v_lot_stock" vls
+        WHERE vls.expiry_date IS NOT NULL
+          AND vls.expiry_date < CURRENT_DATE
+          AND vls.available_lot_stock > 0
+      `,
+      prisma.importReceipt.count({ where: { status: { in: ['ARRIVED', 'INSPECTING'] } } }),
+      prisma.exportReceipt.count({ where: { reason: 'RETURN', status: 'PENDING_APPROVAL' } }),
+      prisma.importReceipt.findMany({
+        orderBy: { created_at: 'desc' },
+        take: 5,
+        include: { creator: { select: { full_name: true } } },
+      }),
+      prisma.exportReceipt.findMany({
+        orderBy: { created_at: 'desc' },
+        take: 5,
+        include: { creator: { select: { full_name: true } } },
+      }),
+    ]);
+
+    const alerts = [];
+    if (lowStock[0]?.c > 0) alerts.push({ type: 'low_stock', message: `Có ${lowStock[0].c} sản phẩm dưới mức tồn kho tối thiểu.` });
+    if (expiringSoon[0]?.c > 0) alerts.push({ type: 'expiring_soon', message: `Có ${expiringSoon[0].c} lô hàng sắp hết hạn.` });
+    if (expired[0]?.c > 0) alerts.push({ type: 'expired', message: `Có ${expired[0].c} lô hàng đã hết hạn.` });
+    if (pendingImports > 0) alerts.push({ type: 'arrival_confirmation', message: `Có ${pendingImports} phiếu nhập cần xử lý.` });
+    if (pendingReturns > 0) alerts.push({ type: 'pending_return', message: `Có ${pendingReturns} phiếu trả NCC đang chờ duyệt.` });
+
+    const activities = [...recentImports.map((item) => ({
+      type: 'import',
+      created_at: item.created_at,
+      message: `${item.creator?.full_name || 'Người dùng'} vừa tạo phiếu nhập ${item.receipt_code}`,
+    })), ...recentExports.map((item) => ({
+      type: 'export',
+      created_at: item.created_at,
+      message: `${item.creator?.full_name || 'Người dùng'} vừa tạo phiếu xuất ${item.receipt_code}`,
+    }))].sort((a, b) => b.created_at - a.created_at).slice(0, 5).map(({ type, message }) => ({ type, message }));
+
+    const alertsCount = Number(lowStock[0]?.c || 0)
+      + Number(expiringSoon[0]?.c || 0)
+      + Number(expired[0]?.c || 0)
+      + Number(pendingImports || 0)
+      + Number(pendingReturns || 0);
+
+    return res.json({
+      alerts_count: alertsCount,
+      alerts,
+      activities,
+    });
+  } catch (error) {
+    console.error('Error fetching bell notifications:', error);
+    return res.status(500).json({ error: 'Lỗi hệ thống khi tải thông báo.' });
+  }
+};
+
+// GET /api/inventory/replenishments/suggestions
+exports.getReplenishmentSuggestions = async (req, res) => {
+  try {
+    const lowStockProducts = await prisma.$queryRaw`
+      SELECT "product_id"::int, "product_code", "product_name", "unit", "category",
+             "current_stock"::int, "min_stock"::int
+      FROM "v_stock_balance"
+      WHERE "current_stock" < "min_stock"
+      ORDER BY "product_code" ASC
+    `;
+
+    if (lowStockProducts.length === 0) {
+      return res.json({ suggestions: [], total_suppliers: 0, total_items: 0 });
+    }
+
+    const fallbackSupplier = await prisma.supplier.findFirst({ where: { is_active: true }, orderBy: { name: 'asc' } });
+    const suggestionsBySupplier = new Map();
+
+    for (const product of lowStockProducts) {
+      const links = await prisma.supplierProductPrice.findMany({
+        where: { product_id: product.product_id },
+        include: { supplier: true },
+        orderBy: { contract_price: 'asc' },
+      });
+
+      const bestLink = links.find((link) => link.supplier?.is_active);
+      const supplier = bestLink?.supplier || fallbackSupplier;
+      if (!supplier) continue;
+
+      const shortage = Math.max(0, Number(product.min_stock) - Number(product.current_stock));
+      const suggestedQty = Math.max(shortage, Number(product.min_stock) * 2 - Number(product.current_stock));
+      const unitPrice = bestLink ? Number(bestLink.contract_price) : 0;
+      const leadTimeDays = bestLink ? Number(bestLink.lead_time_days || 2) : 2;
+      const estimatedAmount = suggestedQty * unitPrice;
+
+      if (!suggestionsBySupplier.has(supplier.id)) {
+        suggestionsBySupplier.set(supplier.id, {
+          supplier_id: supplier.id,
+          supplier_name: supplier.name,
+          supplier_phone: supplier.phone,
+          items: [],
+          total_estimated_amount: 0,
+          max_lead_time_days: 0,
+        });
+      }
+
+      const group = suggestionsBySupplier.get(supplier.id);
+      group.items.push({
+        product_id: product.product_id,
+        product_code: product.product_code,
+        product_name: product.product_name,
+        unit: product.unit,
+        category: product.category,
+        current_stock: Number(product.current_stock),
+        min_stock: Number(product.min_stock),
+        shortage,
+        suggested_qty: suggestedQty,
+        unit_price: unitPrice,
+        estimated_amount: estimatedAmount,
+        lead_time_days: leadTimeDays,
+      });
+      group.total_estimated_amount += estimatedAmount;
+      group.max_lead_time_days = Math.max(group.max_lead_time_days, leadTimeDays);
+    }
+
+    const suggestions = Array.from(suggestionsBySupplier.values());
+    return res.json({
+      suggestions,
+      total_suppliers: suggestions.length,
+      total_items: suggestions.reduce((sum, supplier) => sum + supplier.items.length, 0),
+    });
+  } catch (error) {
+    console.error('Error fetching replenishment suggestions:', error);
+    return res.status(500).json({ error: 'Lỗi hệ thống khi lập đề xuất bổ sung hàng.' });
   }
 };
 

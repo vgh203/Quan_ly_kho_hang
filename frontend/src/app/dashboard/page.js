@@ -453,8 +453,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Admin Replenishment Suggestion Widget */}
-      {user?.role === 'admin' && (
+      {false && user?.role === 'admin' && (
         <div className="rounded-2xl border border-indigo-200/60 dark:border-indigo-900/50 bg-indigo-50/30 dark:bg-indigo-950/10 p-5 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-slate-850 dark:text-white flex items-center gap-2">

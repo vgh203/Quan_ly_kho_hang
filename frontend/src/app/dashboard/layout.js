@@ -9,6 +9,7 @@ import {
   Bell,
   ChevronDown,
   LayoutDashboard,
+  Lightbulb,
   LogOut,
   Maximize,
   Menu,
@@ -110,6 +111,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Nhà cung cấp', href: '/dashboard/suppliers', icon: Truck },
     { name: 'Phiếu nhập', href: '/dashboard/imports', icon: ArrowDownToLine },
     { name: 'Phiếu xuất', href: '/dashboard/exports', icon: ArrowUpFromLine },
+    { name: 'Tồn kho', href: '/dashboard/inventory', icon: Warehouse },
   ];
 
   if (user?.role === 'admin') {
@@ -118,12 +120,18 @@ export default function DashboardLayout({ children }) {
       href: '/dashboard/users',
       icon: UserCheck,
     });
+    menuItems.push(
+      { name: 'Cảnh báo', href: '/dashboard/alerts', icon: Bell },
+      { name: 'Đề xuất bổ sung hàng', href: '/dashboard/replenishments', icon: Lightbulb },
+    );
   }
 
   const Sidebar = ({ mobile = false }) => (
     <aside
-      className={`h-full bg-gray-50 text-gray-700 shadow-xl print:hidden ${
-        mobile ? 'w-64' : 'hidden w-64 shrink-0 md:block'
+      className={`bg-gray-50 text-gray-700 shadow-xl print:hidden ${
+        mobile
+          ? 'h-screen w-64'
+          : 'fixed left-0 top-0 z-40 hidden h-screen w-64 md:block'
       }`}
     >
       <div className="flex h-20 items-center justify-center border-b border-gray-200 bg-slate-600 px-4">
@@ -138,7 +146,7 @@ export default function DashboardLayout({ children }) {
         </div>
       </div>
 
-      <nav className="space-y-1 px-3 py-4">
+      <nav className="h-[calc(100vh-5rem)] space-y-1 overflow-y-auto px-3 py-4">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = item.href === '/dashboard'
@@ -166,7 +174,7 @@ export default function DashboardLayout({ children }) {
   );
 
   return (
-    <div className="flex min-h-screen wms-shell text-slate-900">
+    <div className="min-h-screen wms-shell text-slate-900">
       <Sidebar />
 
       {isSidebarOpen && (
@@ -183,7 +191,7 @@ export default function DashboardLayout({ children }) {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col md:ml-64">
         <header className="sticky top-0 z-30 h-20 border-b border-slate-700 bg-slate-800 text-white no-print">
           <div className="flex h-full items-center justify-between px-4 md:px-6">
             <div className="flex items-center gap-4">

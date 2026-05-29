@@ -190,6 +190,38 @@ export default function NewImportPage() {
   const [estDays, setEstDays]                 = useState('');
   const [details, setDetails]                 = useState([blankDetail()]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('draft') !== 'replenishment') return;
+
+    try {
+      const rawDraft = localStorage.getItem('replenishmentDraft');
+      if (!rawDraft) return;
+
+      const draft = JSON.parse(rawDraft);
+      setSupplierId(String(draft.supplierId || ''));
+      setSupplierName(draft.supplierName || '');
+      setNote(draft.note || '');
+      setEstDays(draft.estimatedDeliveryDays ? String(draft.estimatedDeliveryDays) : '');
+      setDetails((draft.items || []).map((item) => ({
+        _key: Math.random(),
+        category: item.category || '',
+        product_id: item.product_id || '',
+        product_name: item.product_name || '',
+        product_code: item.product_code || '',
+        unit: item.unit || '',
+        quantity: item.quantity ? String(item.quantity) : '',
+        unit_price: item.unit_price ? String(item.unit_price) : '',
+        mfg_date: '',
+        expiry_date: '',
+        location_id: '',
+      })));
+      localStorage.removeItem('replenishmentDraft');
+    } catch (error) {
+      console.error('Failed to read replenishment draft:', error);
+    }
+  }, []);
+
   // ── Load suppliers & locations ──────────────────────────────
   useEffect(() => {
     const load = async () => {

@@ -14,11 +14,11 @@ import * as XLSX from 'xlsx';
 import api from '@/lib/api';
 // ─── Status config ────────────────────────────────────────────
 const STATUS_MAP = {
-  IN_TRANSIT:  { label: 'Đang vận chuyển', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',    icon: Truck },
-  ARRIVED:     { label: 'Đã về kho',        color: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: Package },
-  INSPECTING:  { label: 'Đang kiểm tra',    color: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30', icon: Clock },
-  COMPLETED:   { label: 'Hoàn tất',         color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', icon: CheckCircle2 },
-  CANCELLED:   { label: 'Đã huỷ',           color: 'bg-red-500/15 text-red-400 border-red-500/30',       icon: XCircle },
+  IN_TRANSIT:  { label: 'Đang vận chuyển', color: 'bg-blue-500/15 text-blue-600 border-blue-500/30', card: 'border-blue-200 bg-blue-50 text-blue-700 shadow-blue-100', icon: Truck },
+  ARRIVED:     { label: 'Đã về kho',        color: 'bg-amber-500/15 text-amber-600 border-amber-500/30', card: 'border-amber-200 bg-amber-50 text-amber-700 shadow-amber-100', icon: Package },
+  INSPECTING:  { label: 'Đang kiểm tra',    color: 'bg-cyan-500/15 text-cyan-600 border-cyan-500/30', card: 'border-cyan-200 bg-cyan-50 text-cyan-700 shadow-cyan-100', icon: Clock },
+  COMPLETED:   { label: 'Hoàn tất',         color: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30', card: 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-emerald-100', icon: CheckCircle2 },
+  CANCELLED:   { label: 'Đã huỷ',           color: 'bg-red-500/15 text-red-600 border-red-500/30', card: 'border-red-200 bg-red-50 text-red-700 shadow-red-100', icon: XCircle },
 };
 
 function StatusBadge({ status }) {
@@ -217,7 +217,7 @@ export default function ImportsPage() {
 
       {/* ── Stats Cards ─────────────────────────────────────── */}
       {stats && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {Object.entries(STATUS_MAP).map(([key, cfg]) => {
             const found = stats.by_status?.find((b) => b.status === key);
             const Icon = cfg.icon;
@@ -225,19 +225,19 @@ export default function ImportsPage() {
               <button
                 key={key}
                 onClick={() => { setStatus(key === status ? '' : key); setPage(1); }}
-                className={`group flex flex-col gap-1.5 rounded-xl border p-4 text-left transition-all hover:scale-[1.02] cursor-pointer
+                className={`group flex min-h-[96px] flex-col justify-between gap-2 rounded-xl border p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer
                   ${status === key
-                    ? 'border-indigo-500 bg-indigo-600/10 ring-1 ring-indigo-500/40'
-                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+                    ? `${cfg.card} ring-2 ring-cyan-400/50`
+                    : cfg.card
                   }`}
               >
                 <div className="flex items-center justify-between">
-                  <Icon className={`h-4 w-4 ${status === key ? 'text-indigo-400' : 'text-slate-400'}`} />
-                  <span className={`text-xs font-bold ${status === key ? 'text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                  <Icon className="h-5 w-5 opacity-80" />
+                  <span className="text-lg font-extrabold">
                     {found?.count || 0}
                   </span>
                 </div>
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-400 leading-tight">{cfg.label}</p>
+                <p className="text-sm font-bold leading-tight">{cfg.label}</p>
               </button>
             );
           })}

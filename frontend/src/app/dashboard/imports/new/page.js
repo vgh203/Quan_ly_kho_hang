@@ -319,10 +319,11 @@ export default function NewImportPage() {
         })),
       };
 
+      const res = await api.post('/imports', payload);
       showAlert('Thành công', 'Đã tạo phiếu nhập thành công!');
       router.push(`/dashboard/imports/${res.data.id}`);
     } catch (err) {
-      setError(err.message || 'Lỗi khi tạo phiếu nhập.');
+      setError(err.response?.data?.error || err.message || 'Lỗi khi tạo phiếu nhập.');
     } finally {
       setSubmitting(false);
     }

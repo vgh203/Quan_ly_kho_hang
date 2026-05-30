@@ -14,7 +14,7 @@ import {
   Truck, CheckCircle2, XCircle, Clock, Package, AlertCircle, Download
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-
+import api from '@/lib/api';
 
 async function loadImports(accessToken) {
   const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';

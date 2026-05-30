@@ -1,10 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
 
 async function ensureStockViews(prisma = new PrismaClient()) {
-  await prisma.$executeRawUnsafe(`
-    DROP VIEW IF EXISTS v_lot_stock;
-    DROP VIEW IF EXISTS v_stock_balance;
+  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS v_lot_stock;`);
+  await prisma.$executeRawUnsafe(`DROP VIEW IF EXISTS v_stock_balance;`);
 
+  await prisma.$executeRawUnsafe(`
     CREATE VIEW v_stock_balance AS
     SELECT
       p.id AS product_id,
@@ -37,7 +37,9 @@ async function ensureStockViews(prisma = new PrismaClient()) {
     WHERE p.is_active = TRUE
     GROUP BY p.id, p.product_code, p.name, p.unit, p.category, p.min_stock
     ORDER BY p.product_code;
+  `);
 
+  await prisma.$executeRawUnsafe(`
     CREATE VIEW v_lot_stock AS
     SELECT
       id_lot.id AS lot_id,

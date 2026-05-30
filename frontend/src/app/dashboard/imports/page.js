@@ -15,10 +15,6 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-export const metadata = {
-  title: 'Phiếu nhập kho | WMS',
-  description: 'Danh sách phiếu nhập — Server-Side Rendering',
-};
 
 async function loadImports(accessToken) {
   const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
@@ -33,7 +29,6 @@ async function loadImports(accessToken) {
   return res.json();
 }
 
-<<<<<<< HEAD
 function formatCurrency(n) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 }

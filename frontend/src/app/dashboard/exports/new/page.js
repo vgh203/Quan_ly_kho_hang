@@ -64,6 +64,8 @@ export default function NewExportPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [isExpiryOpen, setIsExpiryOpen] = useState(false);
+  const [isQrOpen, setIsQrOpen] = useState(false);
+
 
   useEffect(() => {
     const load = async () => {

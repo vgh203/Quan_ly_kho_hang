@@ -664,7 +664,7 @@ exports.getAiReplenishmentSuggestions = async (req, res) => {
     const importHistory = await prisma.importDetail.findMany({
       where: {
         product_id: { in: lowStockRows.map((r) => Number(r.product_id)) },
-        receipt: {
+        import_receipt: {
           status: 'APPROVED',
           import_date: { gte: threeMonthsAgo },
         },
@@ -673,9 +673,9 @@ exports.getAiReplenishmentSuggestions = async (req, res) => {
         product_id: true,
         quantity: true,
         unit_price: true,
-        receipt: { select: { import_date: true, supplier: { select: { name: true } } } },
+        import_receipt: { select: { import_date: true, supplier: { select: { name: true } } } },
       },
-      orderBy: { receipt: { import_date: 'desc' } },
+      orderBy: { import_receipt: { import_date: 'desc' } },
       take: 50,
     });
 
@@ -683,8 +683,8 @@ exports.getAiReplenishmentSuggestions = async (req, res) => {
       product_id: Number(d.product_id),
       quantity: Number(d.quantity),
       unit_price: Number(d.unit_price),
-      import_date: d.receipt.import_date,
-      supplier_name: d.receipt.supplier?.name || 'Không rõ',
+      import_date: d.import_receipt.import_date,
+      supplier_name: d.import_receipt.supplier?.name || 'Không rõ',
     }));
 
     const lowStockForAI = lowStockRows.map(serializeRow);

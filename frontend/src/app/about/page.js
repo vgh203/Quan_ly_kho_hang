@@ -2,12 +2,24 @@ import Link from 'next/link';
 
 /** SSG: trang tĩnh, build-time — không cần auth */
 export const metadata = {
-  title: 'Giới thiệu | WMS Logistics',
+  title: 'Giới thiệu hệ thống | WMS Logistics',
   description:
-    'Hệ thống quản lý kho thông minh — đồ án INT1334, domain Logistics & Chuỗi cung ứng.',
+    'Hệ thống quản lý kho WMS (Warehouse Management System) — Xây dựng bằng Next.js 14 App Router, Express, PostgreSQL (Neon), Prisma. Đồ án INT1334 PTIT TP.HCM.',
+  keywords: [
+    'WMS', 'quản lý kho', 'warehouse management', 'logistics',
+    'Next.js', 'PTIT', 'INT1334', 'đồ án lập trình web'
+  ],
   openGraph: {
-    title: 'WMS Logistics',
-    description: 'Warehouse Management System — PTIT',
+    title: 'WMS Logistics — Hệ thống Quản lý Kho Thông Minh',
+    description: 'Ứng dụng quản lý kho với QR Code, bản đồ Leaflet, Gemini AI gợi ý nhập hàng, cảnh báo email.',
+    type: 'website',
+    locale: 'vi_VN',
+    siteName: 'WMS Logistics INT1334',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'WMS Logistics — Quản lý Kho',
+    description: 'Hệ thống quản lý kho fullstack — Next.js + Express + PostgreSQL',
   },
 };
 

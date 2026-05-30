@@ -188,3 +188,38 @@ Sau deploy, kiểm tra: `GET /api/health` trên backend và đăng nhập trên 
 - Copy `backend/.env.example` và `frontend/.env.example` thành `.env` — **không commit file `.env` thật**.
 - Nếu gặp lỗi `prisma generate`, chạy `npx prisma generate` trong thư mục `backend` trước khi start.
 - Backend mặc định cổng **5001**, frontend cổng **3000**.
+
+---
+
+## Kiểm thử & Docker Local (Điểm cộng Đồ án)
+
+### 1. Chạy Jest Unit Tests (Logic Tồn kho)
+Thư mục Backend đã cấu hình sẵn bộ kiểm thử đơn vị tự động để kiểm tra logic xuất hàng FEFO, hạn sử dụng và ngăn chặn xuất vượt tồn kho thực tế.
+```bash
+cd backend
+npm test
+```
+*Kết quả chuẩn: Toàn bộ 7/7 test cases báo màu xanh **PASS**.*
+
+### 2. Khởi chạy toàn bộ bằng Docker Compose
+Dự án được đóng gói container hóa hoàn chỉnh. Để kiểm thử môi trường local đóng gói y hệt production:
+1. Đảm bảo đã mở Docker Desktop.
+2. Tại thư mục gốc `Quan_ly_kho_hang`, chạy lệnh:
+   ```bash
+   docker-compose up --build
+   ```
+3. Hệ thống sẽ tự động build image, tạo mạng nội bộ và khởi chạy Frontend (`http://localhost:3000`) cùng Backend (`http://localhost:5001`).
+
+---
+
+## Nhật ký lỗi thực tế & Giải pháp khi Deploy
+
+Khi nhóm tiến hành sửa đổi hoặc deploy lại từ đầu trên Render/Vercel cần chú ý hai điểm quan trọng sau:
+
+1. **Lỗi Neon PostgreSQL prepared statements (`cannot insert multiple commands...`)**:
+   Khi khởi tạo Views bằng lệnh SQL thô trong Prisma, Neon Database không cho phép gộp nhiều lệnh trong một query chuẩn bị trước. Giải pháp là tách thành các lệnh đơn như trong `backend/db/ensureStockViews.js`.
+2. **Lỗi Metadata trong Next.js Client Component**:
+   Không được phép `export const metadata` ở những file được khai báo `'use client'` (ví dụ như `imports/page.js`). Metadata chỉ hoạt động ở Server Component.
+3. **Cấu hình CORS khi Deploy**:
+   Luôn nhớ cập nhật biến `CORS_ORIGIN` của Render chính xác theo URL Vercel (không chứa dấu `/` ở cuối) để tránh lỗi chặn kết nối.
+

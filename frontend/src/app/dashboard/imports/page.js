@@ -29,6 +29,27 @@ async function loadImports(accessToken) {
   return res.json();
 }
 
+// ─── Status config ────────────────────────────────────────────
+const STATUS_MAP = {
+  IN_TRANSIT:  { label: 'Đang vận chuyển', color: 'bg-blue-500/15 text-blue-600 border-blue-500/30', card: 'border-blue-200 bg-blue-50 text-blue-700 shadow-blue-100', icon: Truck },
+  ARRIVED:     { label: 'Đã về kho',        color: 'bg-amber-500/15 text-amber-600 border-amber-500/30', card: 'border-amber-200 bg-amber-50 text-amber-700 shadow-amber-100', icon: Package },
+  INSPECTING:  { label: 'Đang kiểm tra',    color: 'bg-cyan-500/15 text-cyan-600 border-cyan-500/30', card: 'border-cyan-200 bg-cyan-50 text-cyan-700 shadow-cyan-100', icon: Clock },
+  PENDING_APPROVAL: { label: 'Chờ duyệt', color: 'bg-orange-500/15 text-orange-600 border-orange-500/30', card: 'border-orange-200 bg-orange-50 text-orange-700 shadow-orange-100', icon: Clock },
+  COMPLETED:   { label: 'Hoàn tất',         color: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30', card: 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-emerald-100', icon: CheckCircle2 },
+  CANCELLED:   { label: 'Đã huỷ',           color: 'bg-red-500/15 text-red-600 border-red-500/30', card: 'border-red-200 bg-red-50 text-red-700 shadow-red-100', icon: XCircle },
+};
+
+function StatusBadge({ status }) {
+  const cfg = STATUS_MAP[status] || { label: status, color: 'bg-slate-500/15 text-slate-400 border-slate-500/30', icon: AlertCircle };
+  const Icon = cfg.icon;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${cfg.color}`}>
+      <Icon className="h-3 w-3" />
+      {cfg.label}
+    </span>
+  );
+}
+
 function formatCurrency(n) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 }

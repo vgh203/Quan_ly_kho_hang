@@ -16,5 +16,6 @@ router.get('/lots/:productId', inventoryController.getProductLots);
 router.get('/returnable-products', inventoryController.getReturnableProducts);
 router.get('/bell-notifications', inventoryController.getBellNotifications);
 router.get('/replenishments/suggestions', inventoryController.getReplenishmentSuggestions);
+router.get('/replenishments/ai-suggest', requireAdmin, inventoryController.getAiReplenishmentSuggestions);
 
 module.exports = router;

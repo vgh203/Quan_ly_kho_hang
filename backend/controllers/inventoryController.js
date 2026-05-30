@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { sendLowStockAlert } = require('../services/email.service');
+const { getReplenishmentSuggestions } = require('../services/gemini.service');
 
 const prisma = new PrismaClient();
 
@@ -618,6 +619,88 @@ exports.sendLowStockEmail = async (req, res) => {
     console.error('sendLowStockEmail error:', error);
     return res.status(500).json({
       error: error.message || 'Không thể gửi email cảnh báo.',
+    });
+  }
+};
+
+// ── Gemini AI: Gợi ý đặt hàng bổ sung thông minh ─────────────────────────
+exports.getAiReplenishmentSuggestions = async (req, res) => {
+  try {
+    // 1. Lấy danh sách sản phẩm tồn kho thấp
+    const lowStockRows = await prisma.$queryRaw`
+      SELECT
+        p.id            AS product_id,
+        p.name          AS product_name,
+        p.unit          AS unit,
+        p.min_stock,
+        COALESCE(SUM(id2.quantity - COALESCE(ed.exported, 0)), 0) AS current_stock
+      FROM products p
+      LEFT JOIN import_details id2 ON id2.product_id = p.id
+        AND EXISTS (SELECT 1 FROM import_receipts ir WHERE ir.id = id2.receipt_id AND ir.status = 'APPROVED')
+      LEFT JOIN (
+        SELECT product_id, SUM(quantity) AS exported
+        FROM export_details ed2
+        JOIN export_receipts er ON er.id = ed2.receipt_id AND er.status = 'APPROVED'
+        GROUP BY product_id
+      ) ed ON ed.product_id = p.id
+      WHERE p.is_active = true
+      GROUP BY p.id, p.name, p.unit, p.min_stock
+      HAVING COALESCE(SUM(id2.quantity - COALESCE(ed.exported, 0)), 0) < p.min_stock
+      ORDER BY (p.min_stock - COALESCE(SUM(id2.quantity - COALESCE(ed.exported, 0)), 0)) DESC
+      LIMIT 10
+    `;
+
+    if (!lowStockRows || lowStockRows.length === 0) {
+      return res.json({
+        message: 'Không có sản phẩm nào tồn kho thấp — không cần đặt hàng.',
+        suggestions: [],
+      });
+    }
+
+    // 2. Lấy lịch sử nhập 3 tháng gần nhất
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    const importHistory = await prisma.importDetail.findMany({
+      where: {
+        product_id: { in: lowStockRows.map((r) => Number(r.product_id)) },
+        receipt: {
+          status: 'APPROVED',
+          import_date: { gte: threeMonthsAgo },
+        },
+      },
+      select: {
+        product_id: true,
+        quantity: true,
+        unit_price: true,
+        receipt: { select: { import_date: true, supplier: { select: { name: true } } } },
+      },
+      orderBy: { receipt: { import_date: 'desc' } },
+      take: 50,
+    });
+
+    const historyForAI = importHistory.map((d) => ({
+      product_id: Number(d.product_id),
+      quantity: Number(d.quantity),
+      unit_price: Number(d.unit_price),
+      import_date: d.receipt.import_date,
+      supplier_name: d.receipt.supplier?.name || 'Không rõ',
+    }));
+
+    const lowStockForAI = lowStockRows.map(serializeRow);
+
+    // 3. Gọi Gemini AI
+    const suggestions = await getReplenishmentSuggestions(lowStockForAI, historyForAI);
+
+    return res.json({
+      generated_at: new Date().toISOString(),
+      low_stock_count: lowStockRows.length,
+      suggestions,
+    });
+  } catch (error) {
+    console.error('AI replenishment error:', error.message);
+    return res.status(500).json({
+      error: error.message || 'Không thể tạo gợi ý AI.',
     });
   }
 };

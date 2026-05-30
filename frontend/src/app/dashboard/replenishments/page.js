@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
+  Bot,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -13,6 +14,7 @@ import {
   Phone,
   RefreshCw,
   ShoppingBag,
+  Sparkles,
   Truck,
 } from 'lucide-react';
 import api from '@/lib/api';
@@ -26,6 +28,12 @@ export default function ReplenishmentPage() {
   const [expanded, setExpanded] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Gemini AI state
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+  const [aiError, setAiError] = useState('');
+  const [showAiPanel, setShowAiPanel] = useState(false);
 
   const loadSuggestions = async () => {
     setLoading(true);
@@ -41,6 +49,26 @@ export default function ReplenishmentPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const callGeminiAI = async () => {
+    setAiLoading(true);
+    setAiError('');
+    setShowAiPanel(true);
+    try {
+      const res = await api.get('/inventory/replenishments/ai-suggest');
+      setAiSuggestions(res.data);
+    } catch (err) {
+      setAiError(err.response?.data?.error || 'Không thể kết nối Gemini AI. Kiểm tra GEMINI_API_KEY.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const priorityConfig = {
+    urgent: { label: 'Khẩn cấp', cls: 'bg-red-100 text-red-700' },
+    high:   { label: 'Cao',      cls: 'bg-orange-100 text-orange-700' },
+    medium: { label: 'Trung bình', cls: 'bg-yellow-100 text-yellow-700' },
   };
 
   useEffect(() => {
@@ -94,13 +122,23 @@ export default function ReplenishmentPage() {
               Hệ thống quét tồn kho thấp, chọn nhà cung cấp có giá hợp đồng tốt nhất, rồi gom đề xuất theo từng nhà cung cấp để lập phiếu nhập.
             </p>
           </div>
-          <button
-            onClick={loadSuggestions}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-600"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Quét lại kho hàng
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={callGeminiAI}
+              disabled={aiLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/20 transition hover:bg-purple-600 disabled:opacity-60"
+            >
+              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
+              Gợi ý AI 🤖
+            </button>
+            <button
+              onClick={loadSuggestions}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-600"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Quét lại kho hàng
+            </button>
+          </div>
         </div>
       </div>
 
@@ -108,6 +146,54 @@ export default function ReplenishmentPage() {
         <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800 shadow-sm">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
           <p className="text-sm font-medium">{error}</p>
+        </div>
+      )}
+
+      {/* ── Gemini AI Panel ─────────────────────────────────── */}
+      {showAiPanel && (
+        <div className="rounded-2xl border border-purple-200 bg-purple-50 p-6 shadow-sm dark:border-purple-900 dark:bg-purple-950/30">
+          <div className="mb-4 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-purple-600" />
+            <h2 className="text-lg font-bold text-purple-800 dark:text-purple-300">Gợi ý thông minh từ Gemini AI</h2>
+            <button onClick={() => setShowAiPanel(false)} className="ml-auto text-xs text-purple-500 hover:underline">Ẩn</button>
+          </div>
+
+          {aiLoading && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-16 animate-pulse rounded-xl bg-purple-100 dark:bg-purple-900/30" />
+              ))}
+              <p className="text-center text-sm text-purple-600">Đang phân tích dữ liệu tồn kho với AI...</p>
+            </div>
+          )}
+
+          {aiError && (
+            <div className="rounded-xl bg-red-100 p-4 text-sm text-red-700">{aiError}</div>
+          )}
+
+          {aiSuggestions && !aiLoading && (
+            <div className="space-y-3">
+              <p className="text-xs text-purple-600">Tạo lúc: {new Date(aiSuggestions.generated_at).toLocaleString('vi-VN')} — {aiSuggestions.low_stock_count} sản phẩm tồn kho thấp</p>
+              {(aiSuggestions.suggestions || []).map((s, i) => (
+                <div key={i} className="flex flex-col gap-2 rounded-xl border border-purple-200 bg-white p-4 dark:border-purple-800 dark:bg-slate-900 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-slate-800 dark:text-slate-100">{s.product_name}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${(priorityConfig[s.priority] || priorityConfig.medium).cls}`}>
+                        {(priorityConfig[s.priority] || priorityConfig.medium).label}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{s.reason}</p>
+                    <p className="mt-0.5 text-xs text-slate-400">NCC ưu tiên: <span className="font-medium text-slate-600">{s.supplier_name}</span></p>
+                  </div>
+                  <div className="text-right text-sm">
+                    <p className="font-bold text-purple-700 dark:text-purple-300">Đặt: {s.suggested_qty} sản phẩm</p>
+                    <p className="text-xs text-slate-400">~{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(s.estimated_price * s.suggested_qty)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

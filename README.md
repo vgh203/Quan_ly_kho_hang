@@ -41,7 +41,7 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
->  File `.env.example` đã chứa sẵn đầy đủ thông tin kết nối database và JWT secret — bạn **không cần chỉnh sửa gì thêm**, chỉ cần copy là có thể chạy.
+> File `.env.example` đã chứa sẵn đầy đủ thông tin kết nối database và JWT secret — bạn **không cần chỉnh sửa gì thêm**, chỉ cần copy là có thể chạy.
 
 **Cài đặt dependencies:**
 
@@ -102,11 +102,11 @@ Mở trình duyệt và truy cập: **http://localhost:3000**
 
 ## Tài khoản đăng nhập mặc định
 
-| Vai trò                  | Tên đăng nhập | Mật khẩu      |
-| ------------------------- | ----------------- | --------------- |
-| Quản trị viên (Admin)  | `admin`         | `admin123`    |
-| Nhân viên kho (Staff)   | `nhanvien1`     | `nhanvien123` |
-|  Nhân viên kho (Staff) | `nhanvien2`     | `nhanvien123` |
+| Vai trò                 | Tên đăng nhập | Mật khẩu      |
+| ------------------------ | ----------------- | --------------- |
+| Quản trị viên (Admin) | `admin`         | `admin123`    |
+| Nhân viên kho (Staff)  | `nhanvien1`     | `nhanvien123` |
+| Nhân viên kho (Staff)  | `nhanvien2`     | `nhanvien123` |
 
 ---
 
@@ -144,7 +144,7 @@ Quan_ly_kho_hang/
 - **Quản lý sản phẩm** — Danh sách sản phẩm và bản đồ sơ đồ kệ hàng trực quan
 - **Nhà cung cấp & Bản đồ** — Quản lý nhà cung cấp và vị trí kho theo zone
 - **Phân quyền** — Admin tạo tài khoản, quản lý vai trò nhân viên
--  **Dark / Light Mode** — Chuyển đổi giao diện sáng/tối, lưu tự động
+- **Dark / Light Mode** — Chuyển đổi giao diện sáng/tối, lưu tự động
 
 ---
 
@@ -163,15 +163,21 @@ Quan_ly_kho_hang/
 
 ---
 
-## Triển khai (Deploy)
+## Triển khai (Deploy) & Live Demo
 
-| Thành phần | Nền tảng |
-|------------|----------|
-| Frontend | [Vercel](https://vercel.com) — root `frontend/` |
-| Backend | [Render](https://render.com) — root `backend/` |
-| Database | [Neon](https://neon.tech) PostgreSQL |
+ **Bản Live Demo dự án:**
 
-Chi tiết từng bước: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- **Frontend (App):** [https://quan-ly-kho-hang-vnqv.vercel.app](https://quan-ly-kho-hang-vnqv.vercel.app)
+- **Backend API:** [https://wms-backend-fsyd.onrender.com](https://wms-backend-fsyd.onrender.com)
+  *(Lưu ý: Bạn có thể sử dụng các tài khoản mặc định ở trên để đăng nhập trải nghiệm)*
+
+| Thành phần | Nền tảng                                      |
+| ------------ | ----------------------------------------------- |
+| Frontend     | [Vercel](https://vercel.com) — root `frontend/` |
+| Backend      | [Render](https://render.com) — root `backend/`  |
+| Database     | [Neon](https://neon.tech) PostgreSQL               |
+
+Chi tiết từng bước tự triển khai: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 **Biến môi trường quan trọng**
 
@@ -194,15 +200,20 @@ Sau deploy, kiểm tra: `GET /api/health` trên backend và đăng nhập trên 
 ## Kiểm thử & Docker Local (Điểm cộng Đồ án)
 
 ### 1. Chạy Jest Unit Tests (Logic Tồn kho)
+
 Thư mục Backend đã cấu hình sẵn bộ kiểm thử đơn vị tự động để kiểm tra logic xuất hàng FEFO, hạn sử dụng và ngăn chặn xuất vượt tồn kho thực tế.
+
 ```bash
 cd backend
 npm test
 ```
+
 *Kết quả chuẩn: Toàn bộ 7/7 test cases báo màu xanh **PASS**.*
 
 ### 2. Khởi chạy toàn bộ bằng Docker Compose
+
 Dự án được đóng gói container hóa hoàn chỉnh. Để kiểm thử môi trường local đóng gói y hệt production:
+
 1. Đảm bảo đã mở Docker Desktop.
 2. Tại thư mục gốc `Quan_ly_kho_hang`, chạy lệnh:
    ```bash
@@ -222,4 +233,3 @@ Khi nhóm tiến hành sửa đổi hoặc deploy lại từ đầu trên Render
    Không được phép `export const metadata` ở những file được khai báo `'use client'` (ví dụ như `imports/page.js`). Metadata chỉ hoạt động ở Server Component.
 3. **Cấu hình CORS khi Deploy**:
    Luôn nhớ cập nhật biến `CORS_ORIGIN` của Render chính xác theo URL Vercel (không chứa dấu `/` ở cuối) để tránh lỗi chặn kết nối.
-

@@ -915,7 +915,6 @@ CHƯƠNG 6. KẾT LUẬN
 ## 10. PHỤ LỤC (Cuối báo cáo)
 
 * **PHỤ LỤC A. HƯỚNG DẪN CÀI ĐẶT LOCAL** -> **[THAY THẾ NỘI DUNG]**
-* **PHỤ LỤC B. BẢNG PHÂN CÔNG CÔNG VIỆC NHÓM** (Bảng Phụ lục B.1) -> **[THAY THẾ BẢNG/NỘI DUNG]** - Hãy điền phân công công việc vào các ô tương ứng:
 
 
 PHỤ LỤC A. HƯỚNG DẪN CÀI ĐẶT LOCAL
@@ -927,21 +926,3 @@ PHỤ LỤC A. HƯỚNG DẪN CÀI ĐẶT LOCAL
     Cấu hình tệp .env: Tạo tệp backend/.env và điền đầy đủ các biến liên kết cơ sở dữ liệu (DATABASE_URL), API khóa AI (GEMINI_API_KEY) và API gửi thư (RESEND_API_KEY).
     Khởi chạy Backend: cd backend; npm install; npx prisma db push; node prisma/seed.js; node server.js
     Khởi chạy Frontend: cd ../frontend; npm install; npm run build; npm start
-
-
-PHỤ LỤC B. BẢNG PHÂN CÔNG CÔNG VIỆC NHÓM
-
-Hàng Tiêu đề:
-- Cột 1: Thành viên thực hiện
-- Cột 2: Nhiệm vụ phân công cụ thể
-- Cột 3: Tỷ lệ đóng góp
-
-Hàng 1:
-- Cột 1: Đặng Văn Hiệp (N23DCCN155)
-- Cột 2: Phát triển Frontend UI, tích hợp bản đồ Leaflet, Camera QR Scanner, xuất file Excel client
-- Cột 3: 50%
-
-Hàng 2:
-- Cột 1: Võ Gia Huy (N23DCCN163)
-- Cột 2: Thiết kế CSDL PostgreSQL, viết API Express MVC, Prisma ORM, Resend Email API, Gemini AI API, viết Jest test cases, Deploy
-- Cột 3: 50%

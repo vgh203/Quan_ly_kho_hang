@@ -360,9 +360,6 @@ PHỤ LỤC A. HƯỚNG DẪN CÀI ĐẶT LOCAL
     Khởi chạy Backend: cd backend; npm install; npx prisma db push; node prisma/seed.js; node server.js
     Khởi chạy Frontend: cd ../frontend; npm install; npm run build; npm start
 
-PHỤ LỤC B. BẢNG PHÂN CÔNG CÔNG VIỆC NHÓM
-    Đặng Văn Hiệp (N23DCCN155): Phát triển Frontend UI, tích hợp bản đồ Leaflet, Camera QR Scanner, xuất file Excel client. Đóng góp 50%.
-    Võ Gia Huy (N23DCCN163): Thiết kế CSDL PostgreSQL, viết API Express MVC, Prisma ORM, Resend Email API, Gemini AI API, viết Jest test cases, Deploy. Đóng góp 50%.
 
 ---
 

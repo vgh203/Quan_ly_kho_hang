@@ -920,13 +920,13 @@ CHƯƠNG 6. KẾT LUẬN
 
 PHỤ LỤC A. HƯỚNG DẪN CÀI ĐẶT LOCAL
 
-    Cách 1: Sử dụng Docker Compose: docker-compose up --build
+    Cách 1: Sử dụng Docker Compose:
+    Gõ lệnh: docker-compose up --build
 
-    Cách 2: Chạy Node thông thường:
-
-    Backend: cd backend; npm install; npx prisma db push; node prisma/seed.js; npm start
-
-    Frontend: cd ../frontend; npm install; npm run dev
+    Cách 2: Chạy thủ công (Chế độ Rút gọn - Tối ưu và tiết kiệm RAM):
+    Cấu hình tệp .env: Tạo tệp backend/.env và điền đầy đủ các biến liên kết cơ sở dữ liệu (DATABASE_URL), API khóa AI (GEMINI_API_KEY) và API gửi thư (RESEND_API_KEY).
+    Khởi chạy Backend: cd backend; npm install; npx prisma db push; node prisma/seed.js; node server.js
+    Khởi chạy Frontend: cd ../frontend; npm install; npm run build; npm start
 
 
 PHỤ LỤC B. BẢNG PHÂN CÔNG CÔNG VIỆC NHÓM

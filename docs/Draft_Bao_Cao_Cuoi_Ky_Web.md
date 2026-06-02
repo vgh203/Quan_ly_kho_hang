@@ -352,10 +352,13 @@ CHƯƠNG 6. KẾT LUẬN
     Nhóm đã hoàn thành xuất sắc đồ án môn Lập trình Web với đề tài Hệ thống Quản lý Kho thông minh WMS. Việc áp dụng các công nghệ Next.js 14 App Router, Express MVC và Prisma ORM giúp tạo ra một sản phẩm web hoàn chỉnh, an toàn và tối ưu hiệu năng.
 
 PHỤ LỤC A. HƯỚNG DẪN CÀI ĐẶT LOCAL
-    Cách 1: Sử dụng Docker Compose: docker-compose up --build
-    Cách 2: Chạy Node thông thường:
-    Backend: cd backend; npm install; npx prisma db push; node prisma/seed.js; npm start
-    Frontend: cd ../frontend; npm install; npm run dev
+    Cách 1: Sử dụng Docker Compose:
+    Gõ lệnh: docker-compose up --build
+
+    Cách 2: Chạy thủ công (Chế độ Rút gọn - Tối ưu và tiết kiệm RAM):
+    Cấu hình tệp .env: Tạo tệp backend/.env và điền đầy đủ các biến liên kết cơ sở dữ liệu (DATABASE_URL), API khóa AI (GEMINI_API_KEY) và API gửi thư (RESEND_API_KEY).
+    Khởi chạy Backend: cd backend; npm install; npx prisma db push; node prisma/seed.js; node server.js
+    Khởi chạy Frontend: cd ../frontend; npm install; npm run build; npm start
 
 PHỤ LỤC B. BẢNG PHÂN CÔNG CÔNG VIỆC NHÓM
     Đặng Văn Hiệp (N23DCCN155): Phát triển Frontend UI, tích hợp bản đồ Leaflet, Camera QR Scanner, xuất file Excel client. Đóng góp 50%.

@@ -636,11 +636,11 @@ exports.getAiReplenishmentSuggestions = async (req, res) => {
         COALESCE(SUM(id2.quantity - COALESCE(ed.exported, 0)), 0) AS current_stock
       FROM products p
       LEFT JOIN import_details id2 ON id2.product_id = p.id
-        AND EXISTS (SELECT 1 FROM import_receipts ir WHERE ir.id = id2.receipt_id AND ir.status = 'APPROVED')
+        AND EXISTS (SELECT 1 FROM import_receipts ir WHERE ir.id = id2.receipt_id AND ir.status = 'COMPLETED')
       LEFT JOIN (
         SELECT product_id, SUM(quantity) AS exported
         FROM export_details ed2
-        JOIN export_receipts er ON er.id = ed2.receipt_id AND er.status = 'APPROVED'
+        JOIN export_receipts er ON er.id = ed2.receipt_id AND er.status = 'COMPLETED'
         GROUP BY product_id
       ) ed ON ed.product_id = p.id
       WHERE p.is_active = true
@@ -665,7 +665,7 @@ exports.getAiReplenishmentSuggestions = async (req, res) => {
       where: {
         product_id: { in: lowStockRows.map((r) => Number(r.product_id)) },
         import_receipt: {
-          status: 'APPROVED',
+          status: 'COMPLETED',
           import_date: { gte: threeMonthsAgo },
         },
       },

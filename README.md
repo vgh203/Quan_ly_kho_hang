@@ -1,6 +1,6 @@
 # WMS Logistics — Hệ thống Quản lý Kho hàng
 
-Hệ thống quản lý kho hàng (Warehouse Management System) xây dựng với **Next.js** (frontend) và **Node.js + Express + Prisma** (backend), sử dụng cơ sở dữ liệu **PostgreSQL** trên Neon Cloud.
+Hệ thống quản lý kho thông minh WMS (Warehouse Management System) được xây dựng với **Next.js** (frontend) và **Node.js + Express + Prisma** (backend), sử dụng cơ sở dữ liệu **PostgreSQL** trên Neon Cloud.
 
 ---
 

@@ -2,33 +2,33 @@
 
 import { cookies } from 'next/headers';
 
+function getBackendBaseUrl() {
+  if (process.env.BACKEND_URL) return process.env.BACKEND_URL.replace(/\/$/, '');
+  const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+  return api.replace(/\/api\/?$/, '');
+}
+
 export async function createSupplierAction(formData) {
   try {
-    const cookieStore = cookies();
-    const authStore = cookieStore.get('auth-storage');
-    
-    let token = '';
-    if (authStore && authStore.value) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(authStore.value));
-        token = parsed?.state?.token || '';
-      } catch (e) {}
-    }
-    
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get('accessToken')?.value;
+
     const payload = {
       name: formData.get('name'),
       contact_person: formData.get('contact_person'),
       phone: formData.get('phone'),
       email: formData.get('email'),
       address: formData.get('address'),
-      tax_code: formData.get('tax_code'),
+      distance_km: formData.get('distance_km') ? Number(formData.get('distance_km')) : null,
+      latitude: formData.get('latitude') ? Number(formData.get('latitude')) : null,
+      longitude: formData.get('longitude') ? Number(formData.get('longitude')) : null,
     };
 
-    const res = await fetch('http://localhost:5001/api/suppliers', {
+    const res = await fetch(`${getBackendBaseUrl()}/api/suppliers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
       },
       body: JSON.stringify(payload),
     });
@@ -45,3 +45,4 @@ export async function createSupplierAction(formData) {
     return { success: false, error: 'Lỗi máy chủ khi gọi API' };
   }
 }
+

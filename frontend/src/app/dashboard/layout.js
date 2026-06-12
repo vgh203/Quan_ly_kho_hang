@@ -84,7 +84,11 @@ export default function DashboardLayout({ children }) {
 
     fetchNotifications();
     // Connect to Socket.io for realtime updates
-    const socket = io('http://localhost:5001');
+    const getSocketUrl = () => {
+      const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+      return api.replace(/\/api\/?$/, '');
+    };
+    const socket = io(getSocketUrl());
     socket.on('new_notification', (data) => {
       fetchNotifications(); // Re-fetch the full list when a new notification arrives
     });

@@ -181,8 +181,37 @@ export default function NewExportPage() {
 
   const handleReasonChange = (value) => {
     setReason(value);
-    setSupplierId('');
-    setReturnableProducts([]);
+    if (value === 'RETURN') {
+      const itemWithSupplier = items.find((item) => item.lots && item.lots.length > 0 && item.lots[0].supplier_id);
+      if (itemWithSupplier) {
+        const firstSupplierId = String(itemWithSupplier.lots[0].supplier_id);
+        setSupplierId(firstSupplierId);
+
+        setItems((prev) =>
+          prev.map((item) => {
+            if (item.lots && item.lots.length > 0 && String(item.lots[0].supplier_id) === firstSupplierId) {
+              const lot = item.lots[0];
+              const price = Number(lot.unit_price || 0);
+              const qty = String(lot.available_lot_stock ?? lot.current_lot_stock ?? '');
+              return {
+                ...item,
+                importDetailId: String(lot.lot_id),
+                sellingPrice: String(price),
+                quantity: qty,
+                totalAmount: Number(qty) * price,
+              };
+            }
+            return item;
+          })
+        );
+      } else {
+        setSupplierId('');
+        setReturnableProducts([]);
+      }
+    } else {
+      setSupplierId('');
+      setReturnableProducts([]);
+    }
   };
 
   const handleSupplierChange = (value) => {
@@ -282,6 +311,32 @@ export default function NewExportPage() {
       sellingPrice: price ? String(Math.round(price)) : '',
       totalAmount: available * price,
       importDetailId: '',
+      lots: [lot],
+      showLots: true,
+    };
+
+    setItems((prev) => (prev.length === 1 && !prev[0].productId ? [quickItem] : [...prev, quickItem]));
+    setIsExpiryOpen(false);
+  };
+
+  const handleQuickReturn = (lot) => {
+    const product = products.find((p) => Number(p.id) === Number(lot.product_id));
+    const available = Number(lot.available_lot_stock ?? lot.current_lot_stock ?? 0);
+    const price = Number(lot.unit_price || product?.unit_price || 0);
+
+    setReason('RETURN');
+    setSupplierId(String(lot.supplier_id));
+
+    const quickItem = {
+      _key: Math.random(),
+      productId: String(lot.product_id),
+      productName: lot.product_name,
+      productCode: lot.product_code,
+      unit: lot.unit || product?.unit || '',
+      quantity: String(available),
+      sellingPrice: price ? String(Math.round(price)) : '',
+      totalAmount: available * price,
+      importDetailId: String(lot.lot_id),
       lots: [lot],
       showLots: true,
     };
@@ -751,20 +806,37 @@ export default function NewExportPage() {
                         <td className="px-4 py-3">
                           <p className="font-bold text-slate-800 dark:text-slate-100">{lot.product_name}</p>
                           <p className="text-xs text-slate-400">{lot.product_code}</p>
+                          {lot.supplier_id && (
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              NCC: <span className="font-semibold">{suppliers.find((s) => Number(s.id) === Number(lot.supplier_id))?.name || `ID ${lot.supplier_id}`}</span>
+                            </p>
+                          )}
                         </td>
                         <td className="px-4 py-3 font-medium">{lot.batch_code || 'N/A'}</td>
                         <td className="px-4 py-3 font-bold text-red-500">{lot.expiry_date ? new Date(lot.expiry_date).toLocaleDateString('vi-VN') : '-'}</td>
                         <td className="px-4 py-3 font-bold text-red-600">{lot.days_until_expiry} ngày</td>
                         <td className="px-4 py-3 text-right font-bold">{lot.available_lot_stock ?? lot.current_lot_stock} {lot.unit}</td>
                         <td className="px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleQuickExport(lot)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-cyan-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-cyan-500/20 hover:bg-cyan-600"
-                          >
-                            Xuất bán ngay
-                            <ArrowRight className="h-3 w-3" />
-                          </button>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleQuickExport(lot)}
+                              className="inline-flex items-center gap-1 rounded-lg bg-cyan-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-cyan-500/20 hover:bg-cyan-600 transition"
+                            >
+                              Xuất bán ngay
+                              <ArrowRight className="h-3 w-3" />
+                            </button>
+                            {lot.supplier_id && (
+                              <button
+                                type="button"
+                                onClick={() => handleQuickReturn(lot)}
+                                className="inline-flex items-center gap-1 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-orange-500/20 hover:bg-orange-600 transition"
+                              >
+                                Trả NCC ngay
+                                <ArrowRight className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -207,16 +207,24 @@ export default function DashboardLayout({ children }) {
       <Sidebar />
 
       {isSidebarOpen && (
-        <div className="fixed inset-0 z-40 flex bg-black/50 md:hidden print:hidden">
-          <Sidebar mobile />
-          <button
-            type="button"
+        <div className="fixed inset-0 z-40 flex md:hidden print:hidden">
+          {/* Backdrop overlay */}
+          <div
+            className="absolute inset-0 bg-black/50"
             onClick={() => setIsSidebarOpen(false)}
-            className="m-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-white"
-            aria-label="Đóng menu"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          />
+          {/* Sidebar Drawer */}
+          <div className="relative z-50 flex h-full">
+            <Sidebar mobile />
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(false)}
+              className="m-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-white"
+              aria-label="Đóng menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       )}
 

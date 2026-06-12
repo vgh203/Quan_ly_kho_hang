@@ -175,6 +175,38 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: 'Phiếu nhập phải có ít nhất 1 sản phẩm.' });
     }
 
+    // Verify that all product_ids are valid integers and exist in database
+    const uniqueProductIds = [...new Set(details.map((d) => parseInt(d.product_id)))];
+    if (uniqueProductIds.some(Number.isNaN)) {
+      return res.status(400).json({ error: 'Mã ID sản phẩm không hợp lệ.' });
+    }
+
+    const productsExist = await prisma.product.findMany({
+      where: {
+        id: { in: uniqueProductIds },
+      },
+    });
+
+    if (productsExist.length !== uniqueProductIds.length) {
+      return res.status(400).json({
+        error: 'Có sản phẩm không tồn tại trong hệ thống.',
+      });
+    }
+
+    // Verify that all products are supplied by the selected supplier
+    const supplierPrices = await prisma.supplierProductPrice.findMany({
+      where: {
+        supplier_id: parseInt(supplier_id),
+        product_id: { in: uniqueProductIds },
+      },
+    });
+
+    if (supplierPrices.length !== uniqueProductIds.length) {
+      return res.status(400).json({
+        error: 'Một hoặc nhiều sản phẩm không được cung cấp bởi nhà cung cấp đã chọn.',
+      });
+    }
+
     const receipt_code = await generateReceiptCode();
 
     // Calculate total

@@ -305,6 +305,30 @@ export default function NewImportPage() {
       return;
     }
 
+    // Check if any product does not exist in the system
+    const nonExistentItems = validItems.filter((item) => {
+      const productObj = allProducts.find((p) => String(p.id) === String(item.productId));
+      return !productObj;
+    });
+
+    if (nonExistentItems.length > 0) {
+      const ids = nonExistentItems.map((item) => `"${item.productId}"`).join(', ');
+      setError(`ID/Mã sản phẩm không tồn tại trong hệ thống: ${ids}. Vui lòng chọn sản phẩm hợp lệ.`);
+      return;
+    }
+
+    // Check if any product does not belong to the selected supplier
+    const invalidSupplierItems = validItems.filter((item) => {
+      const productObj = allProducts.find((p) => String(p.id) === String(item.productId));
+      return productObj && !(productObj.supplier_ids || []).includes(Number(supplierId));
+    });
+
+    if (invalidSupplierItems.length > 0) {
+      const names = invalidSupplierItems.map((item) => `"${item.productName}"`).join(', ');
+      setError(`Có sản phẩm không thuộc nhà cung cấp đã chọn: ${names}. Vui lòng kiểm tra lại.`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const payload = {
@@ -426,14 +450,22 @@ export default function NewImportPage() {
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Chi tiết sản phẩm nhập</h2>
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setIsQrOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setIsQrOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-600 flex-1 sm:flex-initial"
+              >
                 <QrCode className="h-4 w-4" />
                 Quét mã QR
               </button>
-              <button type="button" onClick={addRow} className="inline-flex items-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-cyan-600">
+              <button
+                type="button"
+                onClick={addRow}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-cyan-600 flex-1 sm:flex-initial"
+              >
                 <Plus className="h-4 w-4" />
                 Thêm dòng
               </button>
@@ -443,6 +475,9 @@ export default function NewImportPage() {
           <div className="space-y-5">
             {items.map((item, index) => {
               const product = productOptions.find((p) => String(p.id) === String(item.productId));
+              const productObj = allProducts.find((p) => String(p.id) === String(item.productId));
+              const isInvalidSupplier = supplierId && productObj && !(productObj.supplier_ids || []).includes(Number(supplierId));
+              const isProductNotFound = item.productId && !productObj;
               const isDuplicated = item.productId && selectedProductIds.filter((id) => String(id) === String(item.productId)).length > 1;
               const capacityNeeded = formTotalByCategory(item.category);
               const capacityFree = zoneFreeCapacity[item.category] || 0;
@@ -452,74 +487,95 @@ export default function NewImportPage() {
                 <div
                   key={item._key}
                   className={`rounded-2xl border p-5 transition ${
-                    isDuplicated || capacityWarning
+                    isInvalidSupplier || isProductNotFound
+                      ? 'border-red-300 bg-red-50/40 dark:border-red-900/30 dark:bg-red-950/20'
+                      : isDuplicated || capacityWarning
                       ? 'border-amber-300 bg-amber-50/40 dark:border-amber-700 dark:bg-amber-950/20'
                       : 'border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-800/50'
                   }`}
                 >
-                  <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-5">
-                    <label className="space-y-1">
-                      <span className="ml-1 text-[10px] font-bold uppercase text-slate-500">ID sản phẩm</span>
-                      <input
-                        list={`import-product-list-${index}`}
-                        required
-                        value={item.productId}
-                        onChange={(event) => updateItem(index, 'productId', event.target.value)}
-                        placeholder="Nhập ID..."
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-950"
-                      />
-                      <datalist id={`import-product-list-${index}`}>
-                        {productOptions.map((productItem) => (
-                          <option key={productItem.id} value={productItem.id}>
-                            {productItem.id} - {productItem.name}
-                          </option>
-                        ))}
-                      </datalist>
-                    </label>
+                  <div className="grid grid-cols-12 items-end gap-4">
+                    <div className="col-span-12 sm:col-span-4 md:col-span-2">
+                      <label className="space-y-1 block">
+                        <span className="ml-1 text-[10px] font-bold uppercase text-slate-500">ID sản phẩm</span>
+                        <input
+                          list={`import-product-list-${index}`}
+                          required
+                          value={item.productId}
+                          onChange={(event) => updateItem(index, 'productId', event.target.value)}
+                          placeholder="Nhập ID..."
+                          className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-950"
+                        />
+                        <datalist id={`import-product-list-${index}`}>
+                          {productOptions.map((productItem) => (
+                            <option key={productItem.id} value={productItem.id}>
+                              {productItem.id} - {productItem.name}
+                            </option>
+                          ))}
+                        </datalist>
+                      </label>
+                    </div>
 
-                    <label className="space-y-1">
-                      <span className="ml-1 text-[10px] font-bold uppercase text-slate-500">Tên sản phẩm</span>
-                      <input
-                        readOnly={!item.isNewProduct}
-                        value={item.productName}
-                        onChange={(event) => updateItem(index, 'productName', event.target.value)}
-                        placeholder="Tên sản phẩm"
-                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-semibold outline-none read-only:cursor-not-allowed read-only:bg-slate-100 read-only:text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:read-only:bg-slate-800"
-                      />
-                    </label>
+                    <div className="col-span-12 sm:col-span-8 md:col-span-4">
+                      <label className="space-y-1 block">
+                        <span className="ml-1 text-[10px] font-bold uppercase text-slate-500">Tên sản phẩm</span>
+                        <input
+                          readOnly
+                          value={item.productName}
+                          placeholder="Tự động điền theo ID..."
+                          className="w-full rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-semibold text-slate-500 outline-none cursor-not-allowed dark:border-slate-700 dark:bg-slate-800"
+                        />
+                      </label>
+                    </div>
 
-                    <label className="space-y-1">
-                      <span className="ml-1 text-[10px] font-bold uppercase text-slate-500">Số lượng</span>
-                      <input
-                        type="number"
-                        min="1"
-                        required
-                        value={item.quantity}
-                        onChange={(event) => updateItem(index, 'quantity', event.target.value)}
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-950"
-                      />
-                    </label>
+                    <div className="col-span-4 sm:col-span-4 md:col-span-2">
+                      <label className="space-y-1 block">
+                        <span className="ml-1 text-[10px] font-bold uppercase text-slate-500">Số lượng</span>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={item.quantity}
+                          onChange={(event) => updateItem(index, 'quantity', event.target.value)}
+                          className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:border-cyan-500 dark:border-slate-700 dark:bg-slate-950"
+                        />
+                      </label>
+                    </div>
 
-                    <label className="space-y-1">
-                      <span className="ml-1 text-[10px] font-bold uppercase text-slate-500">Đơn giá nhập</span>
-                      <input
-                        readOnly
-                        value={item.price ? formatCurrency(item.price) : '0 đ'}
-                        className="w-full cursor-not-allowed rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-semibold text-slate-500 outline-none dark:border-slate-700 dark:bg-slate-800"
-                      />
-                    </label>
+                    <div className="col-span-4 sm:col-span-4 md:col-span-2">
+                      <label className="space-y-1 block">
+                        <span className="ml-1 text-[10px] font-bold uppercase text-slate-500">Đơn giá nhập</span>
+                        <input
+                          readOnly
+                          value={item.price ? formatCurrency(item.price) : '0 đ'}
+                          className="w-full cursor-not-allowed rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-semibold text-slate-500 outline-none dark:border-slate-700 dark:bg-slate-800"
+                        />
+                      </label>
+                    </div>
 
-                    <label className="space-y-1">
-                      <span className="ml-1 text-[10px] font-bold uppercase text-slate-400">Thành tiền</span>
-                      <input
-                        readOnly
-                        value={formatCurrency(item.totalAmount)}
-                        className="w-full cursor-not-allowed rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-bold text-slate-600 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                      />
-                    </label>
+                    <div className="col-span-4 sm:col-span-4 md:col-span-2">
+                      <label className="space-y-1 block">
+                        <span className="ml-1 text-[10px] font-bold uppercase text-slate-400">Thành tiền</span>
+                        <input
+                          readOnly
+                          value={formatCurrency(item.totalAmount)}
+                          className="w-full cursor-not-allowed rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 font-bold text-slate-600 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   <div className="mt-3 space-y-1 text-xs font-medium">
+                    {isProductNotFound && (
+                      <p className="text-red-500 font-bold">
+                        Cảnh báo: Sản phẩm này không tồn tại trong hệ thống.
+                      </p>
+                    )}
+                    {isInvalidSupplier && !isProductNotFound && (
+                      <p className="text-red-500 font-bold">
+                        Cảnh báo: Sản phẩm này không được cung cấp bởi nhà cung cấp đã chọn.
+                      </p>
+                    )}
                     {isDuplicated && <p className="text-amber-600">Cảnh báo: sản phẩm bị lặp, hệ thống sẽ cộng dồn số lượng khi nhập.</p>}
                     {capacityWarning && (
                       <p className="text-red-500">

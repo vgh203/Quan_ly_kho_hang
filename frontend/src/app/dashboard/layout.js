@@ -270,7 +270,7 @@ export default function DashboardLayout({ children }) {
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 z-50 mt-3 w-80 overflow-hidden rounded-xl border border-gray-100 bg-white text-slate-700 shadow-2xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+                  <div className="fixed left-4 right-4 top-20 z-50 w-auto overflow-hidden rounded-xl border border-gray-100 bg-white text-slate-700 shadow-2xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-80">
                     <div className="border-b border-gray-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
                       <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Thông báo hệ thống</h3>
                     </div>

@@ -236,7 +236,7 @@ exports.getAlerts = async (req, res) => {
       SELECT vls.lot_id::int, vls.product_id::int, vls.product_code, vls.product_name,
              COALESCE(vls.batch_code, 'LOT-' || regexp_replace(vls.receipt_code, '^PN', '') || '-' || vls.lot_id::text) AS batch_code,
              vls.expiry_date, vls.current_lot_stock::int,
-             vls.available_lot_stock::int, vls.unit,
+             vls.available_lot_stock::int, vls.unit, vls.supplier_id::int,
              (vls.expiry_date - CURRENT_DATE)::int AS days_until_expiry,
              p.min_days_to_sell::int, p.expiry_warning_days::int
       FROM v_lot_stock vls
@@ -252,7 +252,7 @@ exports.getAlerts = async (req, res) => {
       SELECT vls.lot_id::int, vls.product_id::int, vls.product_code, vls.product_name,
              COALESCE(vls.batch_code, 'LOT-' || regexp_replace(vls.receipt_code, '^PN', '') || '-' || vls.lot_id::text) AS batch_code,
              vls.expiry_date, vls.current_lot_stock::int,
-             vls.available_lot_stock::int, vls.unit,
+             vls.available_lot_stock::int, vls.unit, vls.supplier_id::int,
              (vls.expiry_date - CURRENT_DATE)::int AS days_until_expiry,
              p.min_days_to_sell::int, p.expiry_warning_days::int
       FROM v_lot_stock vls

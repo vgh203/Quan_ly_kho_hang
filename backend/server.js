@@ -19,8 +19,8 @@ const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
   : defaultOrigins;
 
-// Regex cho phép toàn bộ subdomain *.vercel.app (preview deploy, PR deploy...)
-const vercelPreviewRegex = /^https:\/\/[a-zA-Z0-9-]+-[a-zA-Z0-9-]+\.vercel\.app$/;
+// Regex cho phép toàn bộ subdomain *.vercel.app (mọi link deploy chính thức, preview, v.v. của Vercel)
+const vercelPreviewRegex = /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/;
 
 app.use(
   cors({

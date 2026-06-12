@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,8 +13,7 @@ const loginSchema = z.object({
 });
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { login, isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const { login, isLoading: authLoading } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,11 +25,8 @@ export default function LoginPage() {
     document.documentElement.classList.toggle('dark', savedTheme === 'dark');
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.push('/dashboard');
-    }
-  }, [isAuthenticated, router]);
+  // Không dùng useEffect redirect ở đây vì Zustand chưa kịp sync cookie
+  // khi middleware check → gây race condition. Redirect được xử lý trong onSubmit.
 
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -59,13 +54,16 @@ export default function LoginPage() {
     try {
       const result = await login(data.username, data.password);
       if (result.success) {
-        router.push('/dashboard');
+        // Dùng window.location.href thay vì router.push để buộc browser
+        // thực hiện full page reload kèm cookie → middleware đọc được ngay,
+        // tránh race condition "cookie set xong nhưng middleware chưa thấy".
+        window.location.href = '/dashboard';
       } else {
         setErrorMsg(result.message);
+        setLoading(false);
       }
     } catch {
       setErrorMsg('Đăng nhập thất bại. Vui lòng kiểm tra lại kết nối mạng.');
-    } finally {
       setLoading(false);
     }
   };

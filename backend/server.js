@@ -9,20 +9,30 @@ const ensureStockViews = require('./db/ensureStockViews');
 
 const PORT = process.env.PORT || 5001;
 
-const defaultOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+const defaultOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  // Vercel production domain
+  'https://quan-ly-kho-hang-vnqv.vercel.app',
+];
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
   : defaultOrigins;
 
+// Regex cho phép toàn bộ subdomain *.vercel.app (preview deploy, PR deploy...)
+const vercelPreviewRegex = /^https:\/\/[a-zA-Z0-9-]+-[a-zA-Z0-9-]+\.vercel\.app$/;
+
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      if (process.env.NODE_ENV !== 'production') {
-        return callback(null, true);
-      }
+      // Cho phép không có origin (server-to-server, Postman, curl)
+      if (!origin) return callback(null, true);
+      // Cho phép các origin trong whitelist
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Cho phép mọi subdomain *.vercel.app (Server Actions của Vercel)
+      if (vercelPreviewRegex.test(origin)) return callback(null, true);
+      // Local dev: cho phép tất cả
+      if (process.env.NODE_ENV !== 'production') return callback(null, true);
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,

@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const { sendInspectionAlert } = require('../services/email.service');
 const prisma = new PrismaClient();
 
 // ────────────────────────────────────────────────────────────
@@ -347,7 +348,7 @@ exports.inspect = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const inspected_by = req.user.id;
-    const { issue_notes, details = [] } = req.body;
+    const { issue_notes, details = [], send_email_notification } = req.body;
 
     const receipt = await prisma.importReceipt.findUnique({
       where: { id },
@@ -449,6 +450,41 @@ exports.inspect = async (req, res) => {
         issue_notes: issue_notes || null,
       },
     });
+
+    if (send_email_notification) {
+      try {
+        const receiptWithDetails = await prisma.importReceipt.findUnique({
+          where: { id },
+          include: {
+            details: {
+              include: {
+                product: { select: { product_code: true, name: true } },
+                lot_location: { select: { location_code: true } },
+              },
+            },
+            supplier: { select: { name: true } },
+            inspector: { select: { full_name: true, email: true } },
+          },
+        });
+
+        const admins = await prisma.user.findMany({
+          where: { role: 'admin', is_active: true, email: { not: null, not: '' } },
+          select: { email: true },
+        });
+
+        const emails = admins.map((a) => a.email).filter(Boolean);
+        if (emails.length === 0) {
+          const fallback = process.env.ADMIN_ALERT_EMAIL || process.env.EMAIL_USER;
+          if (fallback) emails.push(fallback);
+        }
+
+        for (const email of emails) {
+          await sendInspectionAlert(receiptWithDetails, email);
+        }
+      } catch (emailErr) {
+        console.error('Failed to send inspection alert email:', emailErr);
+      }
+    }
 
     return res.json({ message: 'Đã lưu kết quả kiểm tra.', receipt: updated });
   } catch (err) {

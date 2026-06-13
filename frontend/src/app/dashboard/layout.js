@@ -107,7 +107,7 @@ export default function DashboardLayout({ children }) {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   const toggleFullscreen = () => {

@@ -73,6 +73,7 @@ export default function ImportDetailPage() {
   const [showInspect, setShowInspect]     = useState(false);
   const [inspectNotes, setInspectNotes]   = useState('');
   const [inspectDetails, setInspectDetails] = useState([]);
+  const [sendEmailNotification, setSendEmailNotification] = useState(true);
 
   // Cancel modal
   const [showCancel, setShowCancel]     = useState(false);
@@ -104,8 +105,11 @@ export default function ImportDetailPage() {
     try {
       const res = await api.patch(`/imports/${id}/${action}`, body);
       await fetchReceipt();
+      return true;
     } catch (e) {
-      setError(e.message);
+      const msg = e.response?.data?.error || e.response?.data?.message || e.message;
+      setError(msg);
+      return false;
     } finally {
       setActionLoading('');
     }
@@ -116,6 +120,7 @@ export default function ImportDetailPage() {
 
   const handleInspect = () => {
     if (!receipt) return;
+    setError('');
     setInspectDetails(
       receipt.details.map((d) => {
         const category = d.product?.category || '';
@@ -139,17 +144,23 @@ export default function ImportDetailPage() {
       })
     );
     setInspectNotes('');
+    setSendEmailNotification(true);
     setShowInspect(true);
   };
 
-  const submitInspect = () => {
+  const submitInspect = async () => {
+    setError('');
     for (const item of inspectDetails) {
       const received = parseInt(item.received_qty, 10) || 0;
       const accepted = parseInt(item.accepted_qty, 10) || 0;
       const rejected = parseInt(item.rejected_qty, 10) || 0;
 
+      if (accepted > received) {
+        setError(`Sản phẩm "${item.product_name}": Số lượng chấp nhận không được lớn hơn số lượng nhận.`);
+        return;
+      }
       if (accepted + rejected !== received) {
-        setError(`Sản phẩm "${item.product_name}": số lượng đạt và lỗi phải bằng số lượng nhận.`);
+        setError(`Sản phẩm "${item.product_name}": Số lượng đạt và lỗi phải bằng số lượng nhận.`);
         return;
       }
       if (!item.batch_code?.trim()) {
@@ -161,7 +172,7 @@ export default function ImportDetailPage() {
         return;
       }
       if (item.mfg_date && item.expiry_date && new Date(item.mfg_date) >= new Date(item.expiry_date)) {
-        setError(`Sản phẩm "${item.product_name}" có NSX phải trước HSD.`);
+        setError(`Sản phẩm "${item.product_name}": Hạn sử dụng (HSD) phải sau Ngày sản xuất (NSX).`);
         return;
       }
       if (!item.location_id) {
@@ -170,8 +181,9 @@ export default function ImportDetailPage() {
       }
     }
 
-    doAction('inspect', {
+    const ok = await doAction('inspect', {
       issue_notes: inspectNotes,
+      send_email_notification: sendEmailNotification,
       details: inspectDetails.map((d) => ({
         detail_id: d.detail_id,
         received_qty: parseInt(d.received_qty) || 0,
@@ -183,7 +195,9 @@ export default function ImportDetailPage() {
         location_id: d.location_id ? parseInt(d.location_id, 10) : null,
       })),
     });
-    setShowInspect(false);
+    if (ok) {
+      setShowInspect(false);
+    }
   };
 
   const submitCancel = () => {
@@ -319,14 +333,21 @@ export default function ImportDetailPage() {
             </button>
           )}
           {receipt.status === 'ARRIVED' && (
-            <button
-              onClick={handleInspect}
-              disabled={!!actionLoading}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-            >
-              {actionLoading === 'inspect' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
-              Kiểm tra hàng hoá
-            </button>
+            user?.role === 'admin' ? (
+              <div className="inline-flex items-center gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-4 py-2.5 text-sm font-semibold text-indigo-500">
+                <Clock className="h-4 w-4" />
+                Chờ nhân viên kiểm kho
+              </div>
+            ) : (
+              <button
+                onClick={handleInspect}
+                disabled={!!actionLoading}
+                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+              >
+                {actionLoading === 'inspect' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
+                Kiểm tra hàng hoá
+              </button>
+            )
           )}
           {['INSPECTING', 'PENDING_APPROVAL'].includes(receipt.status) && user?.role === 'admin' && (
             <button
@@ -537,110 +558,182 @@ export default function ImportDetailPage() {
                 <XCircle className="h-5 w-5" />
               </button>
             </div>
+            
+            {/* Hiển thị thông báo lỗi bên trong Modal */}
+            {error && (
+              <div className="mx-6 mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
             <div className="p-6 space-y-4">
-              {inspectDetails.map((d, i) => (
-                <div key={d.detail_id} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 space-y-3">
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{d.product_name}  <span className="text-xs text-slate-400 font-normal">(Đặt: {d.expected})</span></p>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">SL nhận</label>
-                      <input
-                        type="number" min="0"
-                        value={d.received_qty}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, received_qty: v, accepted_qty: v, rejected_qty: '0' } : r));
-                        }}
-                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
+              {inspectDetails.map((d, i) => {
+                const rQty = parseInt(d.received_qty, 10) || 0;
+                const aQty = parseInt(d.accepted_qty, 10) || 0;
+                const isQtyInvalid = aQty > rQty;
+                const isDateInvalid = d.mfg_date && d.expiry_date && new Date(d.mfg_date) >= new Date(d.expiry_date);
+                const isSensitiveMissingDate = DATE_SENSITIVE_CATEGORIES.includes(d.product_category) && (!d.mfg_date || !d.expiry_date);
+
+                return (
+                  <div key={d.detail_id} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4 space-y-3">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      {d.product_name} <span className="text-xs text-slate-400 font-normal">(Yêu cầu đặt: {d.expected})</span>
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">SL nhận</label>
+                        <input
+                          type="number" min="0"
+                          value={d.received_qty}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setInspectDetails((prev) => prev.map((r, j) => {
+                              if (j !== i) return r;
+                              const currentRQty = parseInt(v, 10) || 0;
+                              const currentAQty = parseInt(r.accepted_qty, 10) || 0;
+                              const nextAcc = Math.min(currentAQty, currentRQty);
+                              const rejQty = Math.max(0, currentRQty - nextAcc);
+                              return { 
+                                ...r, 
+                                received_qty: v, 
+                                accepted_qty: String(nextAcc), 
+                                rejected_qty: String(rejQty) 
+                              };
+                            }));
+                          }}
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">SL chấp nhận</label>
+                        <input
+                          type="number" min="0"
+                          value={d.accepted_qty}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setInspectDetails((prev) => prev.map((r, j) => {
+                              if (j !== i) return r;
+                              const currentRQty = parseInt(r.received_qty, 10) || 0;
+                              const currentAQty = parseInt(v, 10) || 0;
+                              const rejQty = Math.max(0, currentRQty - currentAQty);
+                              return { 
+                                ...r, 
+                                accepted_qty: v, 
+                                rejected_qty: String(rejQty) 
+                              };
+                            }));
+                          }}
+                          className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                            isQtyInvalid 
+                              ? 'border-red-500 focus:ring-red-500 bg-red-50/50 dark:bg-red-950/20' 
+                              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">SL lỗi (Tự động)</label>
+                        <input
+                          type="number"
+                          value={d.rejected_qty}
+                          readOnly
+                          disabled
+                          className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-2 text-sm text-slate-400 dark:text-slate-500 cursor-not-allowed focus:outline-none"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">SL chấp nhận</label>
-                      <input
-                        type="number" min="0"
-                        value={d.accepted_qty}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, accepted_qty: v } : r));
-                        }}
-                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
+                    
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                      <div>
+                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Mã lô</label>
+                        <input
+                          type="text"
+                          value={d.batch_code}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, batch_code: v } : r));
+                          }}
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-cyan-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">NSX</label>
+                        <input
+                          type="date"
+                          value={d.mfg_date}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, mfg_date: v } : r));
+                          }}
+                          className={`w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-800 ${
+                            isDateInvalid || (isSensitiveMissingDate && !d.mfg_date)
+                              ? 'border-red-500 focus:ring-red-500 dark:border-red-500/50' 
+                              : 'border-slate-200 dark:border-slate-700'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">HSD</label>
+                        <input
+                          type="date"
+                          value={d.expiry_date}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, expiry_date: v } : r));
+                          }}
+                          className={`w-full rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-800 ${
+                            isDateInvalid || (isSensitiveMissingDate && !d.expiry_date)
+                              ? 'border-red-500 focus:ring-red-500 dark:border-red-500/50' 
+                              : 'border-slate-200 dark:border-slate-700'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Vị trí kệ</label>
+                        <select
+                          value={d.location_id}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, location_id: v } : r));
+                          }}
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
+                        >
+                          <option value="">-- Chọn kệ --</option>
+                          {(() => {
+                            const sameZone = locations.filter((loc) => !d.product_category || loc.zone?.trim().toLowerCase() === d.product_category.trim().toLowerCase());
+                            const list = sameZone.length ? sameZone : locations;
+                            return list.map((loc) => (
+                              <option key={loc.id} value={String(loc.id)}>
+                                {loc.location_code} - Trống: {loc.available_capacity ?? Math.max(0, (loc.max_capacity || 0) - (loc.current_occupied || 0))}
+                              </option>
+                            ));
+                          })()}
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">SL lỗi</label>
-                      <input
-                        type="number" min="0"
-                        value={d.rejected_qty}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, rejected_qty: v } : r));
-                        }}
-                        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
+
+                    {/* Cảnh báo validate thời gian thực */}
+                    {isQtyInvalid && (
+                      <p className="text-xs text-red-500 dark:text-red-400 font-semibold flex items-center gap-1.5 mt-1">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        Số lượng chấp nhận ({aQty}) không được lớn hơn số lượng nhận ({rQty}).
+                      </p>
+                    )}
+                    {isDateInvalid && (
+                      <p className="text-xs text-red-500 dark:text-red-400 font-semibold flex items-center gap-1.5 mt-1">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        Hạn sử dụng (HSD) phải sau Ngày sản xuất (NSX).
+                      </p>
+                    )}
+                    {isSensitiveMissingDate && (
+                      <p className="text-xs text-amber-500 dark:text-amber-400 font-semibold flex items-center gap-1.5 mt-1">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        Sản phẩm thuộc nhóm nhạy cảm ngày, vui lòng nhập đầy đủ NSX và HSD.
+                      </p>
+                    )}
                   </div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Mã lô</label>
-                      <input
-                        type="text"
-                        value={d.batch_code}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, batch_code: v } : r));
-                        }}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-cyan-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">NSX</label>
-                      <input
-                        type="date"
-                        value={d.mfg_date}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, mfg_date: v } : r));
-                        }}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">HSD</label>
-                      <input
-                        type="date"
-                        value={d.expiry_date}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, expiry_date: v } : r));
-                        }}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Vị trí kệ</label>
-                      <select
-                        value={d.location_id}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setInspectDetails((prev) => prev.map((r, j) => j === i ? { ...r, location_id: v } : r));
-                        }}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
-                      >
-                        <option value="">-- Chọn kệ --</option>
-                        {(() => {
-                          const sameZone = locations.filter((loc) => !d.product_category || loc.zone?.trim().toLowerCase() === d.product_category.trim().toLowerCase());
-                          const list = sameZone.length ? sameZone : locations;
-                          return list.map((loc) => (
-                            <option key={loc.id} value={String(loc.id)}>
-                              {loc.location_code} - Trống: {loc.available_capacity ?? Math.max(0, (loc.max_capacity || 0) - (loc.current_occupied || 0))}
-                            </option>
-                          ));
-                        })()}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               <div>
                 <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Ghi chú vấn đề</label>
                 <textarea
@@ -650,6 +743,18 @@ export default function ImportDetailPage() {
                   placeholder="Mô tả vấn đề nếu có..."
                   className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
+              </div>
+              <div className="flex items-center gap-2.5 py-1">
+                <input
+                  type="checkbox"
+                  id="sendEmailNotification"
+                  checked={sendEmailNotification}
+                  onChange={(e) => setSendEmailNotification(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                />
+                <label htmlFor="sendEmailNotification" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                  Gửi thông báo email cho Quản trị viên
+                </label>
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button

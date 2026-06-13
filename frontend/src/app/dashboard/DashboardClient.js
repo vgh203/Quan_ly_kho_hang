@@ -53,7 +53,7 @@ export default function DashboardClient() {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   const loadDashboardData = async () => {
